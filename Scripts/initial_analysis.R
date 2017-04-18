@@ -4,10 +4,14 @@ rm(list=ls())
 # Load libraries
 library(dplyr)
 library(readr)
+library(purrr)
+library(lubridate)
+library(ggplot2)
 
 # Pull data from web
 uitf_file_url <- "http://www.uitf.com.ph/excel_matrix.php?sort=&sortby=bank&sortorder=asc&class_id=&currency="
 uitf_dir_file <- "Datasets/uitf_matrix.xls"
+
 if(!file.exists(uitf_dir_file)) {
     download.file(url = uitf_file_url, 
                   destfile = uitf_dir_file)
@@ -32,11 +36,18 @@ uitf_linedata[-error_lines, ] %>%
     write_lines("Datasets/modified_file.tsv")
 
 # load modified tsv file
-uitf_matrix <- read_tsv("./Datasets/modified_file.tsv", 
+uitf_df <- read_tsv("./Datasets/modified_file.tsv", 
                         col_names=names(uitf_matrix) # use column names of previously read file
-                        )
+                        ) %>% 
+    select(-No)
 
 # clean up
-rm(uitf_linedata, error_lines, uitf_dir_file, uitf_file_url)
+rm(uitf_linedata, error_lines, uitf_dir_file, uitf_file_url, uitf_matrix)
 
+# format column types data
+uitf_df <- uitf_df %>% 
+    mutate(Classification = factor(Classification),
+           `Inception Date` = mdy(`Inception Date`),
+           `Risk Classification` = factor(Classification),
+           `Last Uploaded Date` = mdy(`Last Uploaded Date`))
 
