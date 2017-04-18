@@ -1,0 +1,64 @@
+---
+title: "UITFs in PH"
+author: "Rey Anthony Masilang"
+output:
+  html_notebook: default
+  html_document: default
+---
+
+This is a sample analysis of UITFs in the Philippines.  
+  
+First, we'll load necessary libraries for this analysis.
+
+```{r}
+library(dplyr)
+library(DT)
+library(rvest)
+library(lubridate)
+library(stringr)
+```
+  
+Pull data from the web and save to local folder.
+
+```{r}
+url <- "http://www.uitf.com.ph/print_matrix.php?sort=&sortby=bank&sortorder=asc&class_id=&currency="
+if(!file.exists("./Datasets/uitf_df.csv")) {
+    read_html(url) %>% 
+        html_nodes(xpath='//*[@class="hovertable"]') %>% 
+        html_table() %>% 
+        `[[`(1) %>% 
+        write_csv("Datasets/uitf_df.csv")
+}
+
+```
+
+Read in the downloaded file and format date columns
+```{r}
+uitf_df <- read_csv("./Datasets/uitf_df.csv",
+                    col_types = "ccccccnnncccccccn") %>% 
+    mutate(`Inception Date` = mdy(`Inception Date`),
+           `Last Uploaded Date` = mdy(`Last Uploaded Date`))
+```
+
+Sample plot
+```{r}
+uitf_df %>% 
+    select(Bank, Classification) %>% 
+    mutate(Bank = str_sub(Bank, 1, 20)) %>% 
+    mutate(Bank = paste0(Bank, "...")) %>% 
+    group_by(Bank) %>% 
+    mutate(Portfolio_Count = n()) %>% 
+    ungroup() %>% 
+    ggplot(aes(x=reorder(Bank, desc(Portfolio_Count)), fill=Classification)) +
+    geom_bar() +
+    theme(plot.title = element_text(hjust = 0.5, size = 10),
+          axis.title.y = element_text(size = 8),
+          axis.text.x = element_text(hjust=1, angle=90),
+          legend.text = element_text(size = 7),
+          legend.title = element_text(size = 8)
+    ) + 
+    labs(title = "UITF Portfolio by Bank",
+         x = "",
+         y = "Count")
+```
+
