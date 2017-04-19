@@ -28,7 +28,7 @@ library(purrr)      # for tidy functional programming
 
 library(ggplot2)    # for most of the graphs
 library(ggiraph)    # for adding interactive tooltips to ggplot graphs
-library(DT)         # for interactive output tables
+library(DT)         # for interactive output data tables
 
 library(rvest)      # for parsing html tables
 library(XML)        # for parsing html
@@ -38,7 +38,9 @@ library(RCurl)      # for parsing html
 
 #### **Initial Data Gathering**
 
-For our first dataset, we'll pull basic information about the available UITFs in the Philippines from [uitf.com](http://www.uitf.com.ph). We'll use the *rvest* package to parse the table from web pages into a data frame then save it as CSV to our local folder.
+For our first dataset, we'll pull basic information about the available UITFs in the Philippines from [uitf.com](http://www.uitf.com.ph). We'll use the *rvest* package to parse the table from web pages into a data frame then save it as CSV to our local folder.  
+
+After loading the file with our specified column data types, we transform the date columns from strings to dates using functions from the *lubridate* package.
 
 ```{r}
 url <- "http://www.uitf.com.ph/print_matrix.php?sort=&sortby=bank&sortorder=asc&class_id=&currency="
@@ -50,18 +52,23 @@ if(!file.exists("./Datasets/uitf_df.csv")) {
         write_csv("Datasets/uitf_df.csv")
 }
 
+# load data into memory
+uitf_df <- read_csv("./Datasets/uitf_df.csv", col_types = "ccccccnnncccccccn") %>% 
+    mutate(`Inception Date` = mdy(`Inception Date`), `Last Uploaded Date` = mdy(`Last Uploaded Date`))
+
 ```
 <br />
 
-#### **Loading the data again**
-After reading in the file again with specified column data types, we transform the date columns from strings to date using functions from the *lubridate* package.
-
+#### **UITF Matrix**
 ```{r}
-uitf_df <- read_csv("./Datasets/uitf_df.csv",
-                    col_types = "ccccccnnncccccccn") %>% 
-    mutate(`Inception Date` = mdy(`Inception Date`),
-           `Last Uploaded Date` = mdy(`Last Uploaded Date`))
+datatable(uitf_df, 
+          filter = "none", 
+          rownames = FALSE,
+          class = 'stripe',
+          options = list(dom = "tp",
+                         pagelength = 10))
 ```
+<br />
 <br />
 
 
@@ -129,8 +136,8 @@ ggiraph(ggobj = plot, height_svg=6, width_svg = 9, width = 1)
 <br />
 
 
-#### **Another section**
-description here
+#### **Agressive UITFs are mostly comprised of equity-tracking funds**
+Agressive equity funds track the Philippine Stock Exchange index (PSEi) 100% or in combination with another industry index. Moderate risk UITFs on the other hand are composed of a wider class of funds from balanced funds to bond funds and some money-market funds. Last, conservative funds are mostly money-market funds which are invested in short-term debt securities like treasury bills.
 
 ```{r warning=FALSE}
 plot <- uitf_df %>% 
@@ -159,51 +166,41 @@ ggiraph(ggobj = plot, height_svg=6, width_svg = 9, width = 1)
 <br />
 
 
-#### **Select PSEi-based UITFs**
-note to self: bloomberg scraper https://www.bloomberg.com/markets/chart/data/1Y/BPIEQUI:PM
-
-```{r warning=FALSE}
-uitf_df %>% 
-    # filter(Bank %in% c("BDO Unibank, Inc.", "BPI Asset Management and Trust Corporation")) %>%
-    mutate(Benchmark = tolower(Benchmark)) %>%
-    filter(str_detect(Benchmark, "psei") | str_detect(Benchmark, "stock exchange")) %>% 
-    mutate(percent = ifelse(!str_detect(Benchmark, "%"), 
-                            100,
-                            str_extract(Benchmark, pattern = "[:digit:]+%") %>% 
-                                str_replace("%", "") %>% 
-                                as.numeric())) %>% 
-    filter(percent == 100) %>%
-    View()
-```
+#### **Next steps...**
+In the next part of this analysis, we'll look at the differences between these UITFs by category and by risk flavor in terms of fund performance. But first, I'll explain in the next tab how I gathered additional data for this analysis.
+<br />
+<br />
 <br />
 
+
+## Scraping Web Data
+
+#### **Required data**
+To compare the performance of these UITFs, we need the daily prices for the past year for each UITF. 
+
+#### **Symbol Parser**
+note to self: bloomberg scraper https://www.bloomberg.com/markets/chart/data/1Y/BPIEQUI:PM
 
 ```{r message=FALSE, warning=FALSE}
 
 search_bloomberg_symbol <- function(search_string) {
-    # search_string <- "www.bloomberg.com/quote BPI Equity Value Fund"
-    html <- getForm("https://www.google.com/search", hl="tl",
-                lr="", q=search_string, btnG="Search") %>% 
-    htmlTreeParse()
     
+    # query google search and parse html document
+    html <- getForm("https://www.google.com/search", hl="tl", lr="", q=search_string, btnG="Search") %>% 
+        htmlTreeParse()
+    
+    # descend through html hierarchy to extract UITF symbol
     symbol <- html$children$html[2]$body[2]$table[4]$tbody[2]$tr[2]$td[1]$div[2]$div[2]$div[1]$div[1]$ol[1]$div[1]$h3[1]$a[1]$text %>% 
-    toString() %>% 
-    str_split(pattern = " ") %>% 
-    unlist() %>% 
-    `[`(1)
-    
-    if(symbol == "") {
-        symbol <- html$children$html[2]$body[2]$table[4]$tbody[2]$tr[2]$td[1]$div[2]$div[2]$div[1]$div[1]$ol[1]$div[1]$h3[1]$a[1]$b[1]$text %>% 
-    toString() %>% 
-    str_split(pattern = " ") %>% 
-    unlist() %>% 
-    `[`(1)
-    }
+        toString() %>% 
+        str_split(pattern = " ") %>% 
+        unlist() %>% 
+        `[`(1)
     
     return(symbol)
 }
     
 ```
+<br />
 
 
 ```{r}
