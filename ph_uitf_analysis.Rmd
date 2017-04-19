@@ -1,24 +1,44 @@
 ---
-title: "UITFs in PH"
+title: "Analysis of UITFs in PH using R"
 author: "Rey Anthony Masilang"
 output:
-  html_notebook: default
-  html_document: default
+  html_document:
+    theme: default
+    highlight: textmate
+    code_folding: hide
 ---
 
-This is a sample analysis of UITFs in the Philippines.  
-  
-First, we'll load necessary libraries for this analysis.
 
-```{r}
-library(dplyr)
-library(DT)
-library(rvest)
-library(lubridate)
-library(stringr)
+
+# {.tabset}
+
+
+
+## Prerequisites 
+
+#### **Libraries**
+First, we'll load necessary libraries. Most of these are from the tidyverse which greatly helps in having a consistent workflow.
+
+```{r message=FALSE, warning=FALSE, results="hide"}
+library(dplyr)      # for data frame wrangling
+library(readr)      # for reading and writing flat files
+library(stringr)    # for string manipulation
+library(lubridate)  # for date string parsing
+library(purrr)      # for tidy functional programming
+
+library(ggplot2)    # for most of the graphs
+library(ggiraph)    # for adding interactive tooltips to ggplot graphs
+library(DT)         # for interactive output tables
+
+library(rvest)      # for parsing html tables
+library(XML)        # for parsing html
+library(RCurl)      # for parsing html
 ```
-  
-Pull data from the web and save to local folder.
+<br />
+
+#### **Initial Data Gathering**
+
+For our first dataset, we'll pull basic information about the available UITFs in the Philippines from [uitf.com](http://www.uitf.com.ph). We'll use the *rvest* package to parse the table from web pages into a data frame then save it as CSV to our local folder.
 
 ```{r}
 url <- "http://www.uitf.com.ph/print_matrix.php?sort=&sortby=bank&sortorder=asc&class_id=&currency="
@@ -31,34 +51,193 @@ if(!file.exists("./Datasets/uitf_df.csv")) {
 }
 
 ```
+<br />
 
-Read in the downloaded file and format date columns
+#### **Loading the data again**
+After reading in the file again with specified column data types, we transform the date columns from strings to date using functions from the *lubridate* package.
+
 ```{r}
 uitf_df <- read_csv("./Datasets/uitf_df.csv",
                     col_types = "ccccccnnncccccccn") %>% 
     mutate(`Inception Date` = mdy(`Inception Date`),
            `Last Uploaded Date` = mdy(`Last Uploaded Date`))
 ```
+<br />
 
-Sample plot
-```{r}
-uitf_df %>% 
-    select(Bank, Classification) %>% 
-    mutate(Bank = str_sub(Bank, 1, 20)) %>% 
-    mutate(Bank = paste0(Bank, "...")) %>% 
+
+
+
+
+
+## Initial Analysis
+
+
+#### **BPI has the widest array of UITF products among banks in PH**
+Plotting the number of different UITF products per bank shows BPI having the largest portfolio with 27 different products followed by BDO with 21 and Metrobank with 17.
+
+```{r warning=FALSE}
+plot <- uitf_df %>% 
+    transmute(Bank = paste0(str_sub(Bank, 1, 30), "...")) %>% 
     group_by(Bank) %>% 
     mutate(Portfolio_Count = n()) %>% 
     ungroup() %>% 
-    ggplot(aes(x=reorder(Bank, desc(Portfolio_Count)), fill=Classification)) +
-    geom_bar() +
-    theme(plot.title = element_text(hjust = 0.5, size = 10),
-          axis.title.y = element_text(size = 8),
-          axis.text.x = element_text(hjust=1, angle=90),
-          legend.text = element_text(size = 7),
-          legend.title = element_text(size = 8)
+    ggplot(aes(x=reorder(Bank, desc(Portfolio_Count)))) +
+    geom_bar_interactive(aes(tooltip = ..count..), fill = "darkgreen") +
+    theme(plot.title = element_text(hjust = 0.5, size = 12),
+          axis.title.y = element_text(size = 9),
+          axis.text.y = element_text(size = 8),
+          axis.text.x = element_text(size = 8, hjust=1, angle=90)
     ) + 
-    labs(title = "UITF Portfolio by Bank",
+    labs(title = "Portfolio Size per Bank",
          x = "",
          y = "Count")
+
+ggiraph(ggobj = plot, height_svg=6, width_svg = 9, width = 1)
 ```
+<br />
+
+
+#### **Top banks offer a mix of moderate risk and agressive types of UITFs**
+
+```{r warning=FALSE}
+plot <- uitf_df %>% 
+    select(Bank, Risk = `Risk Classification`) %>% 
+    mutate(Bank = paste0(str_sub(Bank, 1, 30), "...")) %>% 
+    mutate(Risk = factor(Risk, levels=c("Aggressive", "Moderate", "Conservative"))) %>% 
+    group_by(Bank) %>% 
+    mutate(Count = n()) %>% 
+    ungroup() %>% 
+    ggplot(aes(x=reorder(Bank, desc(Count)), fill=Risk)) +
+    geom_bar_interactive(aes(tooltip = ..count..), position = "fill") +
+    theme(plot.title = element_text(hjust = 0.5, size = 12),
+          axis.title.y = element_text(size = 9),
+          axis.text.y = element_text(size = 8),
+          axis.title.x = element_text(size = 9),
+          axis.text.x = element_text(size = 8, hjust=1, vjust=0.5, angle=90),
+          legend.title = element_text(size = 9),
+          legend.text = element_text(size = 8),
+          legend.position = "top"
+    ) + 
+    labs(title = " Portfolio Risk Ratio per Bank",
+         x = "Bank",
+         y = "Ratio") +
+    scale_y_continuous(labels = scales::percent) +
+    scale_fill_brewer(type="seq", palette = "Set1")
+
+ggiraph(ggobj = plot, height_svg=6, width_svg = 9, width = 1)
+```
+<br />
+
+
+#### **Another section**
+description here
+
+```{r warning=FALSE}
+plot <- uitf_df %>% 
+    select(Risk = `Risk Classification`, Classification) %>% 
+    mutate(Risk = factor(Risk, levels=c("Aggressive", "Moderate", "Conservative"))) %>% 
+    group_by(Risk) %>% 
+    mutate(Count = n()) %>% 
+    ungroup() %>% 
+    ggplot(aes(x=reorder(Classification, desc(Count)), fill=Risk)) +
+    geom_bar_interactive(aes(tooltip = ..count..)) +
+    theme(plot.title = element_text(hjust = 0.5, size = 12),
+          axis.title.y = element_text(size = 9),
+          axis.text.y = element_text(size = 8),
+          axis.title.x = element_text(size = 9),
+          axis.text.x = element_text(size = 8, hjust=1, angle=90),
+          legend.position = "none"
+    ) + 
+    facet_grid(. ~ Risk, scales = "free_x", space = "free_x") +
+    labs(title = "UITF breakdown by Risk Flavor and Fund Category",
+         x = "Category",
+         y = "Count") +
+    scale_fill_brewer(palette = "Set1")
+
+ggiraph(ggobj = plot, height_svg=6, width_svg = 9, width = 1)
+```
+<br />
+
+
+#### **Select PSEi-based UITFs**
+note to self: bloomberg scraper https://www.bloomberg.com/markets/chart/data/1Y/BPIEQUI:PM
+
+```{r warning=FALSE}
+uitf_df %>% 
+    # filter(Bank %in% c("BDO Unibank, Inc.", "BPI Asset Management and Trust Corporation")) %>%
+    mutate(Benchmark = tolower(Benchmark)) %>%
+    filter(str_detect(Benchmark, "psei") | str_detect(Benchmark, "stock exchange")) %>% 
+    mutate(percent = ifelse(!str_detect(Benchmark, "%"), 
+                            100,
+                            str_extract(Benchmark, pattern = "[:digit:]+%") %>% 
+                                str_replace("%", "") %>% 
+                                as.numeric())) %>% 
+    filter(percent == 100) %>%
+    View()
+```
+<br />
+
+
+```{r message=FALSE, warning=FALSE}
+
+search_bloomberg_symbol <- function(search_string) {
+    # search_string <- "www.bloomberg.com/quote BPI Equity Value Fund"
+    html <- getForm("https://www.google.com/search", hl="tl",
+                lr="", q=search_string, btnG="Search") %>% 
+    htmlTreeParse()
+    
+    symbol <- html$children$html[2]$body[2]$table[4]$tbody[2]$tr[2]$td[1]$div[2]$div[2]$div[1]$div[1]$ol[1]$div[1]$h3[1]$a[1]$text %>% 
+    toString() %>% 
+    str_split(pattern = " ") %>% 
+    unlist() %>% 
+    `[`(1)
+    
+    if(symbol == "") {
+        symbol <- html$children$html[2]$body[2]$table[4]$tbody[2]$tr[2]$td[1]$div[2]$div[2]$div[1]$div[1]$ol[1]$div[1]$h3[1]$a[1]$b[1]$text %>% 
+    toString() %>% 
+    str_split(pattern = " ") %>% 
+    unlist() %>% 
+    `[`(1)
+    }
+    
+    return(symbol)
+}
+    
+```
+
+
+```{r}
+selected_uitf <- uitf_df %>% 
+    mutate(Benchmark = tolower(Benchmark)) %>%
+    filter(str_detect(Benchmark, "psei") | str_detect(Benchmark, "stock exchange")) %>% 
+    mutate(percent = ifelse(!str_detect(Benchmark, "%"), 
+                            100,
+                            str_extract(Benchmark, pattern = "[:digit:]+%") %>% 
+                                str_replace("%", "") %>% 
+                                as.numeric())) %>% 
+    filter(percent == 100) %>% 
+    select(Bank, `Fund Name`) %>%
+    mutate(search_string = paste("www.bloomberg.com/quote", `Fund Name`, sep = " ")) %>% 
+    mutate(Symbol = NA)
+
+# for(i in seq_along(selected_uitf$search_string)) {
+#     search_string <- selected_uitf$search_string[i]
+#     selected_uitf$Symbol[i] <- search_bloomberg_symbol(search_string)
+#     message(paste0(i, " out of ", nrow(selected_uitf)))
+# }
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 
