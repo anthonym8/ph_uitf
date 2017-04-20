@@ -25,6 +25,7 @@ library(readr)      # for reading and writing flat files
 library(stringr)    # for string manipulation
 library(lubridate)  # for date string parsing
 library(purrr)      # for tidy functional programming
+library(rjson)      # for parsing json files
 
 library(ggplot2)    # for most of the graphs
 library(ggiraph)    # for adding interactive tooltips to ggplot graphs
@@ -38,9 +39,9 @@ library(RCurl)      # for parsing html
 
 #### **Comprehensive UITF List**
 
-For our first dataset, we'll pull basic information about the available UITFs in the Philippines from [uitf.com](http://www.uitf.com.ph). We'll use the *rvest* package to parse tables in web pages then save it as CSV to our local folder.  
+For our first dataset, we'll pull basic information about the available UITFs in the Philippines from [uitf.com](http://www.uitf.com.ph). We'll use the `rvest` package to parse tables in web pages then save it as CSV to our local folder.  
 
-After loading the file with our specified column data types, we transform the date columns from strings to dates using functions from the *lubridate* package. Take a glimpse at a portion of the data we just extracted.
+After loading the file with our specified column data types, we transform the date columns from strings to dates using functions from the `lubridate` package. Take a glimpse at a portion of the data we just extracted.
 
 ```{r}
 url <- "http://www.uitf.com.ph/print_matrix.php?sort=&sortby=bank&sortorder=asc&class_id=&currency="
@@ -64,7 +65,7 @@ datatable(uitf_df[c(1,2,3,5)],
           rownames = FALSE,
           class = 'stripe',
           options = list(dom = "pt",
-                         pagelength = 100,
+                         pagelength = 10,
                          autoWidth = TRUE
                          )
           )
@@ -144,7 +145,6 @@ if(!file.exists("./Datasets/uitf_symbols.csv")) {
     
     # save to local folder then cleanup memory
     write_csv(uitf_symbols, "Datasets/uitf_symbols.csv")
-    rm(uitf_symbols, search_string)
 }
 
 # reload symbol table and remove erroneous symbols
@@ -160,15 +160,106 @@ datatable(uitf_symbols,
           rownames = FALSE,
           class = 'stripe',
           options = list(dom = "pt",
-                         pagelength = 100,
+                         pagelength = 10,
                          autoWidth = TRUE
                          )
           )
-
-# remove rows without results for symbol query
-uitf_symbols <- filter(uitf_symbols, Symbol == "")
 ```
 <br />
+
+Before we pull daily price data, let's make sure to clean up our dataset first. Duplicate symbols are red flags for incorrect symbols.
+```{r warning=FALSE}
+duplicate_symbols <- uitf_symbols$Symbol %>% 
+    table() %>% 
+    as_data_frame() %>% 
+    filter(n > 1)
+
+print(duplicate_symbols)
+```
+<br />
+That's a lot of duplicates. Let's see which UITFs from our list have these symbols matched to them. From this point, we just have to manually check which ones have incorrectly labelled symbols and remove them from out UITF list. It's very likely that bloomberg does not have daily price data for these which is why our google query returned inaccurate results.
+```{r warning=FALSE, message=FALSE}
+# create duplicates table
+duplicates <- uitf_symbols %>% 
+    filter(Symbol %in% duplicate_symbols[[1]]) %>% 
+    arrange(Symbol)
+
+head(duplicates)
+
+# remove rows with correct labels from our duplicates table
+duplicates <- duplicates[-c(1,5,9,11,13,16,17,20,22,26,29,30,32,34,36,39), ]
+
+# remove duplicates from out uitf_symbols dataframe
+uitf_symbols <- uitf_symbols %>% 
+    anti_join(duplicates) %>% 
+    filter(Symbol != "") %>% 
+    filter(!is.na(Symbol))
+```
+
+
+
+<br />
+
+##### **Pulling Daily Prices from Bloomberg.com**
+Now that we have the ticker symbols for most of the UITFs in our matrix, we can pull daily price data for each one for the past year. We'll get this data from Bloomberg using this simple hack which exposes the raw data used in their graphs. We just have to access their site as follows: `www.bloomberg.com/markets/chart/data/1Y/` + `<ticker symbol>`. This returns the raw data in `JSON` format. See example below for `BPIEQUI:PM`.
+
+```{r message=FALSE, warning=FALSE}
+# parse JSON data and show first 10 elements
+fromJSON(file = "https://www.bloomberg.com/markets/chart/data/1Y/BPIEQUI:PM") %>% 
+    `[[`("data_values") %>% 
+    `[`(1:10) %>% 
+    list("data_values" = .) %>% 
+    toJSON()
+```
+
+
+```{r message=FALSE, warning=FALSE}
+
+# initialize price data frame
+price_data <- data_frame(Date = as.Date(vector()),
+                         NAVPU = double(),
+                         UITF = character())
+
+# extract data from web
+if(!file.exists("./Datasets/uitf_daily_prices_raw.csv")) {
+    for(i in 1:nrow(uitf_symbols)) {
+    
+        # progress tracker
+        message(paste0("Extracting data | ", i, " out of ", nrow(uitf_symbols)))
+    
+        # build url
+        url <- paste0("https://www.bloomberg.com/markets/chart/data/1Y/", uitf_symbols$Symbol[i])
+    
+        # download raw JSON data
+        json_data <- fromJSON(file= url)[["data_values"]]
+        if(length(json_data) == 0) next()
+    
+        # transform to data frame
+        uitf_daily_prices <- json_data %>% 
+            unlist() %>% 
+            matrix(ncol = 2, byrow = TRUE, 
+                   dimnames = list(c(), c("Date", "NAVPU"))) %>% 
+            as_data_frame()  %>% 
+            mutate(Date = as.Date(as.POSIXlt(Date/1000, origin = "1970-01-01"))) %>%
+            mutate(UITF = uitf_symbols$Symbol[i])
+    
+        # merge to price data
+        price_data <- bind_rows(price_data, uitf_daily_prices)
+    }
+
+    # save data to local folder
+    write_csv(price_data, "Datasets/uitf_daily_prices_raw.csv")
+    rm(url, json_data, uitf_daily_prices, price_data)
+}
+
+# load data
+price_data <- read_csv("./Datasets/uitf_daily_prices_raw.csv")
+
+# show some data
+head(price_data)
+
+
+```
 
 
 
