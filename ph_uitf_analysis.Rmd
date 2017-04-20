@@ -8,15 +8,15 @@ output:
     code_folding: hide
 ---
 
-
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache=TRUE)
+```
 
 # {.tabset}
 
+## Data Gathering 
 
-
-## Prerequisites 
-
-#### **Libraries**
+#### **Prerequisites**
 First, we'll load necessary libraries. Most of these are from the tidyverse which greatly helps in having a consistent workflow.
 
 ```{r message=FALSE, warning=FALSE, results="hide"}
@@ -36,14 +36,16 @@ library(RCurl)      # for parsing html
 ```
 <br />
 
-#### **Initial Data Gathering**
+#### **Comprehensive UITF List**
 
-For our first dataset, we'll pull basic information about the available UITFs in the Philippines from [uitf.com](http://www.uitf.com.ph). We'll use the *rvest* package to parse the table from web pages into a data frame then save it as CSV to our local folder.  
+For our first dataset, we'll pull basic information about the available UITFs in the Philippines from [uitf.com](http://www.uitf.com.ph). We'll use the *rvest* package to parse tables in web pages then save it as CSV to our local folder.  
 
-After loading the file with our specified column data types, we transform the date columns from strings to dates using functions from the *lubridate* package.
+After loading the file with our specified column data types, we transform the date columns from strings to dates using functions from the *lubridate* package. Take a glimpse at a portion of the data we just extracted.
 
 ```{r}
 url <- "http://www.uitf.com.ph/print_matrix.php?sort=&sortby=bank&sortorder=asc&class_id=&currency="
+
+# parse and save data in to local folder
 if(!file.exists("./Datasets/uitf_df.csv")) {
     read_html(url) %>% 
         html_nodes(xpath='//*[@class="hovertable"]') %>% 
@@ -56,19 +58,131 @@ if(!file.exists("./Datasets/uitf_df.csv")) {
 uitf_df <- read_csv("./Datasets/uitf_df.csv", col_types = "ccccccnnncccccccn") %>% 
     mutate(`Inception Date` = mdy(`Inception Date`), `Last Uploaded Date` = mdy(`Last Uploaded Date`))
 
-```
-<br />
-
-#### **UITF Matrix**
-```{r}
-datatable(uitf_df, 
+# show a snippet of our data frame
+datatable(uitf_df[c(1,2,3,5)], 
           filter = "none", 
           rownames = FALSE,
           class = 'stripe',
-          options = list(dom = "tp",
-                         pagelength = 10))
+          options = list(dom = "pt",
+                         pagelength = 100,
+                         autoWidth = TRUE
+                         )
+          )
+
 ```
 <br />
+
+#### **Scraping Daily Price Data**
+To compare the performance of these UITFs, we need the following for each UITF:
+
+* Ticker symbol used in Bloomberg 
+* Daily prices for the past year  
+<br />
+
+##### **Extracting Ticker Symbols thru Google Search**
+There aren't many sites offering daily prices of all UITFs in our list. Bank websites show data for their products only of course and parsing each individual site is inefficient. **uitf.com** has all the data we need but is unscrapable because it requires you to answer a captcha first.  
+
+So we're going to pull daily price data from [bloomberg.com](https://www.bloomberg.com/) through a clever hack. But first we need to know the ticker symbols used for each UITF in bloomberg. There's no readily available data for this so we'll have to rely on Google's intelligence for this one.
+<br /><br />
+
+##### **Our custom Google query function**
+This function queries *Google Search* and returns the ticker symbol we need. All we need to do is pass it a string which will be used for our google search. The string follows this format: `www.bloomberg.com/quote` + `<bank name>` + `<UITF name>`.
+
+```{r message=FALSE, warning=FALSE}
+
+search_bloomberg_symbol <- function(search_string) {
+    
+    # query google search and parse html document
+    html <- getForm("https://www.google.com.ph/search", hl="tl", lr="", q=search_string, btnG="Search") %>%
+        htmlTreeParse()
+    
+    # descend through html hierarchy to narrow down our search
+    html_flat <- html$children$html[2]$body[2]$table[4]$tbody[2]$tr[2]$td[1]$div[2]$div[2]$div[1]$div[1]$ol[1]$div %>% unlist()
+    
+    # a little string processing to extract our symbol
+    if(is.null(html_flat)) {
+        symbol <- NA
+    } else {
+        symbol <- data_frame(Name = names(html_flat), Value = html_flat) %>% 
+        filter(str_detect(Name, "\\.text\\.value")) %>% 
+        `[[`(2) %>% 
+        paste(collapse=" ") %>% 
+        str_replace(".*quote", "") %>% 
+        str_replace(":PM.*", "") %>% 
+        str_replace_all("/", "") %>% 
+        str_trim() %>% 
+        str_split(pattern = " ") %>% 
+        unlist() %>% 
+        paste(collapse = "")
+    }
+
+    return(symbol)
+}
+
+```
+<br />
+
+
+##### **Querying Google Search for Ticker Symbols**
+We use our custom function above to extract ticker symbols from google search results for each UITF. Using this method, not all UITFs were correctly matched to their symbols. It is very likely that these UITFs do not have data hosted on [bloomberg.com](http://www.bloomberg.com) so we just have to exclude them from our analysis.
+```{r message=FALSE, warning=FALSE}
+
+if(!file.exists("./Datasets/uitf_symbols.csv")) {
+    
+    # prepare search strings for each UITF
+    uitf_symbols <- uitf_df %>% 
+    select(Bank, `Fund Name`) %>%
+    mutate(search_string = paste("www.bloomberg.com/quote", `Fund Name`)) %>% 
+    mutate(Symbol = NA)
+    
+    # query symbols for all UITFs
+    for(i in 1:nrow(uitf_symbols)) {
+        search_string <- uitf_symbols$search_string[i]
+        uitf_symbols$Symbol[i] <- search_bloomberg_symbol(search_string)
+        message(paste0(i, " out of ", nrow(uitf_symbols)))
+    }
+    
+    # save to local folder then cleanup memory
+    write_csv(uitf_symbols, "Datasets/uitf_symbols.csv")
+    rm(uitf_symbols, search_string)
+}
+
+# reload symbol table and remove erroneous symbols
+uitf_symbols <- read_csv("Datasets/uitf_symbols.csv") %>% 
+    select(Bank, `Fund Name`, Symbol) %>% 
+    mutate(Symbol = ifelse(str_length(Symbol) > 7, NA, Symbol)) %>% 
+    mutate(Symbol = ifelse(str_length(Symbol) < 6, NA, Symbol)) %>% 
+    mutate(Symbol = ifelse(!is.na(Symbol), paste(Symbol, "PM", sep=":"), NA))
+    
+# display results
+datatable(uitf_symbols, 
+          filter = "none", 
+          rownames = FALSE,
+          class = 'stripe',
+          options = list(dom = "pt",
+                         pagelength = 100,
+                         autoWidth = TRUE
+                         )
+          )
+
+# remove rows without results for symbol query
+uitf_symbols <- filter(uitf_symbols, Symbol == "")
+```
+<br />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <br />
 
 
@@ -104,7 +218,7 @@ ggiraph(ggobj = plot, height_svg=6, width_svg = 9, width = 1)
 <br />
 
 
-#### **Top banks offer a mix of moderate risk and agressive types of UITFs**
+#### **Top banks offer a mix of moderate risk and aggressive types of UITFs**
 
 ```{r warning=FALSE}
 plot <- uitf_df %>% 
@@ -136,8 +250,8 @@ ggiraph(ggobj = plot, height_svg=6, width_svg = 9, width = 1)
 <br />
 
 
-#### **Agressive UITFs are mostly comprised of equity-tracking funds**
-Agressive equity funds track the Philippine Stock Exchange index (PSEi) 100% or in combination with another industry index. Moderate risk UITFs on the other hand are composed of a wider class of funds from balanced funds to bond funds and some money-market funds. Last, conservative funds are mostly money-market funds which are invested in short-term debt securities like treasury bills.
+#### **Aggressive UITFs are mostly comprised of equity-tracking funds**
+Aggressive equity funds track the Philippine Stock Exchange index (PSEi) 100% or in combination with another industry index. Moderate risk UITFs on the other hand are composed of a wider class of funds from balanced funds to bond funds and some money-market funds. Last, conservative funds are mostly money-market funds which are invested in short-term debt securities like treasury bills.
 
 ```{r warning=FALSE}
 plot <- uitf_df %>% 
@@ -164,77 +278,7 @@ plot <- uitf_df %>%
 ggiraph(ggobj = plot, height_svg=6, width_svg = 9, width = 1)
 ```
 <br />
-
-
-#### **Next steps...**
-In the next part of this analysis, we'll look at the differences between these UITFs by category and by risk flavor in terms of fund performance. But first, I'll explain in the next tab how I gathered additional data for this analysis.
 <br />
 <br />
-<br />
-
-
-## Scraping Web Data
-
-#### **Required data**
-To compare the performance of these UITFs, we need the daily prices for the past year for each UITF. 
-
-#### **Symbol Parser**
-note to self: bloomberg scraper https://www.bloomberg.com/markets/chart/data/1Y/BPIEQUI:PM
-
-```{r message=FALSE, warning=FALSE}
-
-search_bloomberg_symbol <- function(search_string) {
-    
-    # query google search and parse html document
-    html <- getForm("https://www.google.com/search", hl="tl", lr="", q=search_string, btnG="Search") %>% 
-        htmlTreeParse()
-    
-    # descend through html hierarchy to extract UITF symbol
-    symbol <- html$children$html[2]$body[2]$table[4]$tbody[2]$tr[2]$td[1]$div[2]$div[2]$div[1]$div[1]$ol[1]$div[1]$h3[1]$a[1]$text %>% 
-        toString() %>% 
-        str_split(pattern = " ") %>% 
-        unlist() %>% 
-        `[`(1)
-    
-    return(symbol)
-}
-    
-```
-<br />
-
-
-```{r}
-selected_uitf <- uitf_df %>% 
-    mutate(Benchmark = tolower(Benchmark)) %>%
-    filter(str_detect(Benchmark, "psei") | str_detect(Benchmark, "stock exchange")) %>% 
-    mutate(percent = ifelse(!str_detect(Benchmark, "%"), 
-                            100,
-                            str_extract(Benchmark, pattern = "[:digit:]+%") %>% 
-                                str_replace("%", "") %>% 
-                                as.numeric())) %>% 
-    filter(percent == 100) %>% 
-    select(Bank, `Fund Name`) %>%
-    mutate(search_string = paste("www.bloomberg.com/quote", `Fund Name`, sep = " ")) %>% 
-    mutate(Symbol = NA)
-
-# for(i in seq_along(selected_uitf$search_string)) {
-#     search_string <- selected_uitf$search_string[i]
-#     selected_uitf$Symbol[i] <- search_bloomberg_symbol(search_string)
-#     message(paste0(i, " out of ", nrow(selected_uitf)))
-# }
-
-```
-
-
-
-
-
-
-
-
-
-
-
-
 
 
