@@ -9,7 +9,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(cache=TRUE)
+knitr::opts_chunk$set(cache=FALSE)
 ```
 
 # {.tabset}
@@ -20,21 +20,22 @@ knitr::opts_chunk$set(cache=TRUE)
 First, we'll load necessary libraries. Most of these are from the tidyverse which greatly helps in having a consistent workflow.
 
 ```{r message=FALSE, warning=FALSE, results="hide"}
-library(dplyr)      # for data frame wrangling
-library(readr)      # for reading and writing flat files
-library(stringr)    # for string manipulation
-library(lubridate)  # for date string parsing
-library(purrr)      # for tidy functional programming\
-library(tidyr)      # for data frame reshaping
-library(rjson)      # for parsing json files
+library(dplyr)          # for data frame wrangling
+library(readr)          # for reading and writing flat files
+library(stringr)        # for string manipulation
+library(lubridate)      # for date string parsing
+library(purrr)          # for tidy functional programming\
+library(tidyr)          # for data frame reshaping
+library(rjson)          # for parsing json files
 
-library(ggplot2)    # for most of the graphs
-library(ggiraph)    # for adding interactive tooltips to ggplot graphs
-library(DT)         # for interactive output data tables
+library(ggplot2)        # for most of the graphs
+library(ggiraph)        # for adding interactive tooltips to ggplot graphs
+library(RColorBrewer)   # for custom plotting colors
+library(DT)             # for interactive output data tables
 
-library(rvest)      # for parsing html tables
-library(XML)        # for parsing html
-library(RCurl)      # for parsing html
+library(rvest)          # for parsing html tables
+library(XML)            # for parsing html
+library(RCurl)          # for parsing html
 ```
 <br />
 
@@ -269,7 +270,7 @@ head(price_data)
 
 <br />
 We can plot a quick line graph of our price data. This graph does not provide much insight and majority of UITFs are compressed in the lower region of the vertical axis. However, this shows that we have our data in a nice format we can work with later on.
-```{r}
+```{r warning=FALSE, message=FALSE}
 
 plot <- price_data %>% 
     ggplot(aes(x=Date, y=NAVPU, col=UITF)) +
@@ -299,7 +300,7 @@ ggiraph(ggobj = plot, height_svg=6, width_svg = 9, width = 1)
 
 
 
-## Initial Analysis
+## Overview of UITFs
 
 
 #### **BPI has the widest array of UITF products among banks in PH**
@@ -362,7 +363,7 @@ ggiraph(ggobj = plot, height_svg=6, width_svg = 9, width = 1)
 #### **Aggressive UITFs are mostly comprised of equity-tracking funds**
 Aggressive equity funds track the Philippine Stock Exchange index (PSEi) 100% or in combination with another industry index. Moderate risk UITFs on the other hand are composed of a wider class of funds from balanced funds to bond funds and some money-market funds. Last, conservative funds are mostly money-market funds which are invested in short-term debt securities like treasury bills.
 
-```{r warning=FALSE}
+```{r warning=FALSE, message=FALSE}
 plot <- uitf_df %>% 
     select(Risk = `Risk Classification`, Classification) %>% 
     mutate(Risk = factor(Risk, levels=c("Aggressive", "Moderate", "Conservative"))) %>% 
@@ -387,6 +388,51 @@ plot <- uitf_df %>%
 ggiraph(ggobj = plot, height_svg=6, width_svg = 9, width = 1)
 ```
 <br />
+
+#### **Timeline of UITF Inceptions**
+Looking at the dotplot below, we see that BPI was the first to introduce a couple of UITFs in 1994. We also have the largest number of UITF introductions on 2005 from multiple banks and another series of introductions from 2013 to 2016.
+
+```{r warning=FALSE, message=FALSE}
+# update our uitf matrix with those which we have daily price data only
+uitf_df <- uitf_df %>% 
+    inner_join(uitf_symbols)
+
+# initialize custom categorical colors
+all_qual_palettes <- brewer.pal.info %>% 
+    mutate(Palette = rownames(.)) %>% 
+    filter(category == "qual") %>% 
+    select(Palette, maxcolors)
+
+all_qual_colors <- map2(all_qual_palettes$maxcolors,
+                            all_qual_palettes$Palette,
+                            brewer.pal) %>% 
+    unlist()
+
+my_qual_colors <- all_qual_colors[1:length(unique(uitf_df$Bank))]
+
+# dot plot of UITF introductions
+plot <- uitf_df %>% 
+    transmute(Year = year(`Inception Date`), Bank = Bank) %>% 
+    ggplot(aes(x = Year, fill = Bank, col = Bank)) +
+    geom_dotplot(method = "histodot", binwidth = 1, dotsize = 0.7, stackdir = "center", stackgroups = TRUE) +
+    coord_cartesian(xlim = c(1994, 2018)) +
+    scale_x_continuous(breaks = seq(1990,2020, by = 2)) +
+    scale_y_continuous(breaks = NULL) +
+    labs(x = "Year", y = "Count", title = "Timeline of UITF Inceptions") +
+    theme(legend.text = element_text(size = 9),
+          legend.key.size = unit(5, "mm"),
+          plot.title = element_text(hjust = 0.5),
+          axis.text.x = element_text(vjust = 0.5, angle = 90)) +
+    scale_fill_manual(values = my_qual_colors) +
+    scale_color_manual(values = my_qual_colors)
+
+ggiraph(ggobj = plot, height_svg=6, width_svg = 9, width = 1)
+```
+<br />
+
+
+
+
 <br />
 <br />
 
