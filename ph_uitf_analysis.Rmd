@@ -24,7 +24,8 @@ library(dplyr)      # for data frame wrangling
 library(readr)      # for reading and writing flat files
 library(stringr)    # for string manipulation
 library(lubridate)  # for date string parsing
-library(purrr)      # for tidy functional programming
+library(purrr)      # for tidy functional programming\
+library(tidyr)      # for data frame reshaping
 library(rjson)      # for parsing json files
 
 library(ggplot2)    # for most of the graphs
@@ -194,6 +195,10 @@ uitf_symbols <- uitf_symbols %>%
     anti_join(duplicates) %>% 
     filter(Symbol != "") %>% 
     filter(!is.na(Symbol))
+
+# clean up workspace
+rm(duplicates, duplicate_symbols)
+
 ```
 
 
@@ -212,7 +217,8 @@ fromJSON(file = "https://www.bloomberg.com/markets/chart/data/1Y/BPIEQUI:PM") %>
     toJSON()
 ```
 
-
+<br />
+We merge all data for all UITFs in a long data frame and then save to a local folder again. At this point we're more concerned with collecting data first so this format ensures we don't lose any data during collection. Later on we will reshape this data frame as needed in our subsequent analyses.
 ```{r message=FALSE, warning=FALSE}
 
 # initialize price data frame
@@ -249,7 +255,7 @@ if(!file.exists("./Datasets/uitf_daily_prices_raw.csv")) {
 
     # save data to local folder
     write_csv(price_data, "Datasets/uitf_daily_prices_raw.csv")
-    rm(url, json_data, uitf_daily_prices, price_data)
+    rm(url, json_data, uitf_daily_prices, price_data, search_bloomberg_symbol)
 }
 
 # load data
@@ -261,6 +267,18 @@ head(price_data)
 
 ```
 
+<br />
+We can plot a quick line graph of our price data. This graph does not provide much insight and majority of UITFs are compressed in the lower region of the vertical axis. However, this shows that we have our data in a nice format we can work with later on.
+```{r}
+
+plot <- price_data %>% 
+    ggplot(aes(x=Date, y=NAVPU, col=UITF)) +
+    geom_line_interactive(aes(tooltip=UITF)) +
+    theme(legend.position = "none")
+
+ggiraph(ggobj = plot, height_svg=6, width_svg = 9, width = 1)
+
+```
 
 
 
