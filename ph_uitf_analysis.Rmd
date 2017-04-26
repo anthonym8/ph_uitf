@@ -422,18 +422,88 @@ plot <- uitf_df %>%
     theme(legend.text = element_text(size = 9),
           legend.key.size = unit(5, "mm"),
           plot.title = element_text(hjust = 0.5),
-          axis.text.x = element_text(vjust = 0.5, angle = 90)) +
+          axis.text.x = element_text(vjust = 0.5, angle = 45)) +
     scale_fill_manual(values = my_qual_colors) +
     scale_color_manual(values = my_qual_colors)
 
 ggiraph(ggobj = plot, height_svg=6, width_svg = 9, width = 1)
 ```
 <br />
-
-
-
-
 <br />
 <br />
 
+## Performance Analysis
+
+#### **ROI**
+
+```{r}
+
+price_data %>% 
+    group_by(UITF) %>% 
+    mutate(Price_Date = ifelse(Date == min(Date), "Old", NA)) %>% 
+    mutate(Price_Date = ifelse(Date == max(Date), "New", Price_Date)) %>% 
+    na.omit() %>% 
+    select(UITF, NAVPU, Price_Date) %>% 
+    spread(Price_Date, NAVPU) %>% 
+    mutate(YOY = 100*(New/Old - 1)) %>% 
+    arrange(desc(YOY)) %>% 
+    inner_join(uitf_df[, c("Symbol", "Bank", "Fund Name", "Classification", "Risk Classification")], by = c("UITF" = "Symbol")) %>% 
+    ggplot(aes(x = Classification, y = YOY, fill = Classification, col = Classification)) +
+    geom_violin(width = 1.5) +
+    geom_boxplot(col = "black", fill = "white", width = 0.07, alpha = 0.5) +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+```
+<br />
+
+#### **Top Performing UITFs**
+In this section we will review which UITFs performed best for the past year. Our key metric is year-over-year returns (YOY) from Apr 26, 2016 to Apr 25, 2017. The table below shows all UITFs and their performance in descending order. Feel free to navigate through each bank and/or each classification.
+
+```{r warning=FALSE, message=FALSE}
+# custom function for price selection
+get_price <- function(Date, NAVPU, target_date) {
+    NAVPU[Date == target_date]
+}
+
+# summarize performance of each UITF
+perf_summ <- price_data %>% 
+    group_by(UITF) %>% 
+    # get prices for current date and 1 year ago
+    mutate(price_latest = get_price(Date, NAVPU, max(Date))) %>% 
+    mutate(price_1Y_ago = get_price(Date, NAVPU, min(Date))) %>% 
+    filter(Date >= ymd("2017-01-01")) %>% 
+    # get prices at start of 2017
+    mutate(price_startOfYear = get_price(Date, NAVPU, min(Date))) %>% 
+    select(UITF, starts_with("price_")) %>% 
+    ungroup() %>% 
+    unique() %>% 
+    # calculate YTD and YOY returns
+    mutate(YTD = 100*(price_latest/price_startOfYear - 1)) %>% 
+    mutate(YOY = 100*(price_latest/price_1Y_ago - 1)) %>% 
+    select(Symbol = UITF, YTD, YOY) %>% 
+    arrange(desc(YTD)) %>% 
+    # merge UITF info
+    inner_join(uitf_df[, c("Symbol", "Bank", "Fund Name", "Classification", "Risk Classification")])
+
+# prepare output table
+top_uitfs <- perf_summ %>% 
+    arrange(desc(YOY)) %>% 
+    mutate(YOY = round(YOY, digits = 2),
+           YTD = round(YTD, digits = 2)) %>% 
+    select(Bank, Symbol, Classification, YOY, YTD) %>% 
+    mutate(Bank = factor(Bank), Classification = factor(Classification))
+
+# display interactive data table
+datatable(top_uitfs, 
+          filter = "top", 
+          class = 'stripe',
+          options = list(dom = "pt",
+                         pagelength = 20,
+                         autoWidth = TRUE
+                         )
+          )    
+    
+```
+<br />
+<br />
+<br />
 
