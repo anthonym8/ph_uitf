@@ -18,8 +18,10 @@ knitr::opts_chunk$set(cache=FALSE)
 
 <br />
 
-## Data Preparation
+## Introduction
+<br />
 
+## Data Preparation
 
 ```{r message=FALSE, warning=FALSE, results="hide"}
 library(dplyr)          # for data frame wrangling
@@ -278,17 +280,17 @@ set.seed(10)
 sample_UITFs <- sample(price_data$UITF, 30)
 
 # plot trend chart
-plot <- price_data %>% 
+plot <- price_data %>%
     filter(UITF %in% sample_UITFs) %>% 
-    ggplot(aes(x=Date, y=NAVPU, col=UITF)) +
-    geom_line_interactive(aes(tooltip=UITF)) +
+    ggplot(aes(x=Date, y=NAVPU, col=UITF, group=UITF, tooltip=UITF)) +
+    geom_line_interactive(lwd=1, alpha=0.8) +
     labs(x = "",
          y = "Net Asset Value per Unit",
          title = "Daily NAVPUs from 2016/04/26 to 2017/04/25") +
     theme(legend.position = "none",
           plot.title = element_text(hjust = 0.5))
 
-ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
+ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1, tooltip_opacity=0.8)
 
 ```
 
@@ -309,39 +311,24 @@ returns_data <- price_data %>%
     arrange(UITF, Date) %>% 
     left_join(first_prices) %>% 
     mutate(Return = ((NAVPU/First_Price)-1)*100) %>% 
+    ungroup() %>% 
     select(UITF, Date, Return)
 
 # plot all UITF trends
 plot <- returns_data %>% 
     filter(UITF %in% sample_UITFs) %>% 
-    ggplot(aes(x=Date, y=Return, col=UITF)) +
-    geom_line_interactive(aes(tooltip=UITF)) +
+    ggplot(aes(x=Date, y=Return, col=UITF, group=UITF, tooltip=UITF)) +
+    geom_line_interactive(lwd=1, alpha=0.8) +
     labs(x = "",
          y = "Returns (%)",
          title = "Overlay of % Return Trends") +
     theme(legend.position = "none",
           plot.title = element_text(hjust = 0.5))
 
-ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
+ggiraph(ggobj=plot, height_svg=5, width_svg=9, width=1, tooltip_opacity=0.8)
 
 ```
-
-
-
-
-
-
-
-
-
-
-
-
 <br />
-
-
-
-
 
 
 ## Overview of UITFs
@@ -354,19 +341,28 @@ Plotting the number of different UITF products per bank shows BPI having the lar
 plot <- uitf_df %>% 
     transmute(Bank = paste0(str_sub(Bank, 1, 30), "...")) %>% 
     group_by(Bank) %>% 
-    mutate(Portfolio_Count = n()) %>% 
+    summarize(Portfolio_Count = n()) %>% 
     ungroup() %>% 
-    ggplot(aes(x=reorder(Bank, desc(Portfolio_Count)))) +
-    geom_bar_interactive(aes(tooltip = ..count..), fill = "darkgreen", width = 0.95) +
+    mutate(tooltip = paste(paste0("Bank: ", Bank),
+                           paste0("Products: ", Portfolio_Count),
+                           sep = "\n")) %>% 
+    ggplot(aes(x=reorder(Bank, desc(Portfolio_Count)), 
+               y=Portfolio_Count, 
+               tooltip = tooltip,
+               label = Portfolio_Count)) +
+    geom_bar_interactive(stat = "identity", fill = "darkgreen", width = 0.95) +
+    geom_label(nudge_y = 1.5, alpha=0.4) +
     theme(plot.title = element_text(hjust = 0.5, size = 12),
           axis.title.y = element_text(size = 9),
-          axis.text.y = element_text(size = 8),
-          axis.text.x = element_text(size = 8, hjust=1, angle=90)
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.x = element_text(size = 8, hjust=1, angle=90),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank()
     ) + 
-    scale_y_continuous(limits = c(0,30)) +
     labs(title = "Portfolio Size per Bank",
          x = "",
-         y = "Count")
+         y = "")
 
 ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 ```
@@ -394,19 +390,31 @@ all_qual_colors <- map2(all_qual_palettes$maxcolors,
 
 my_qual_colors <- all_qual_colors[1:length(unique(uitf_df$Bank))]
 
-# dot plot of UITF introductions
+
+# dot plot
 plot <- uitf_df %>% 
-    transmute(Year = year(`Inception Date`), Bank = Bank) %>% 
-    ggplot(aes(x = Year, fill = Bank, col = Bank)) +
-    geom_dotplot(method = "histodot", binwidth = 1, dotsize = 0.55, stackdir = "center", stackgroups = TRUE) +
+    select(Bank, `Fund Name`, `Inception Date`) %>% 
+    mutate(Year = year(`Inception Date`)) %>% 
+    mutate(Bank_full_name = Bank) %>% 
+    mutate(Bank = paste0(str_sub(Bank, start=1, end=20), "...")) %>% 
+    mutate(tooltip = paste(paste0("Bank:\t", Bank_full_name), 
+                           paste0("Fund Name:\t", `Fund Name`), 
+                           paste0("Birthday:\t", `Inception Date`), 
+                           sep="\n")) %>% 
+    arrange(Bank, `Fund Name`) %>% 
+    group_by(Year) %>%
+    mutate(Rank = 1:n()) %>% 
+    mutate(Rank = Rank - mean(Rank)) %>% 
+    ggplot(aes(x = Year, y = Rank, col = Bank)) +
+    geom_point_interactive(aes(tooltip = tooltip), size = 3.5) +
     coord_cartesian(xlim = c(1994, 2018)) +
     scale_x_continuous(breaks = seq(1990,2020, by = 2)) +
     scale_y_continuous(breaks = NULL) +
-    labs(x = "Year", y = "Count", title = "Timeline of UITF Inceptions") +
+    labs(x = "Year", y = "", title = "Timeline of UITF Inceptions") +
     theme(legend.text = element_text(size = 9),
           legend.key.size = unit(5, "mm"),
           plot.title = element_text(hjust = 0.5),
-          axis.text.x = element_text(vjust = 0.5, angle = 45)) +
+          axis.text.x = element_text(vjust = 0.5, angle = 0)) +
     scale_fill_manual(values = my_qual_colors) +
     scale_color_manual(values = my_qual_colors)
 
@@ -418,29 +426,70 @@ ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 #### **Top banks offer a mix of moderate risk and aggressive types of UITFs**
 
 ```{r warning=FALSE}
+# plot <- uitf_df %>% 
+#     select(Bank, Risk = `Risk Classification`) %>% 
+#     mutate(Bank = paste0(str_sub(Bank, 1, 30), "...")) %>% 
+#     mutate(Risk = factor(Risk, levels=c("Aggressive", "Moderate", "Conservative"))) %>% 
+#     group_by(Bank) %>% 
+#     mutate(Count = n()) %>% 
+#     ungroup() %>% 
+#     ggplot(aes(x=reorder(Bank, desc(Count)), fill=Risk)) +
+#     geom_bar_interactive(aes(tooltip = ..prop..), position = "fill", width = 0.95) +
+#     theme(plot.title = element_text(hjust = 0.5, size = 12),
+#           axis.title.y = element_text(size = 9),
+#           axis.text.y = element_text(size = 8),
+#           axis.title.x = element_text(size = 9),
+#           axis.text.x = element_text(size = 8, hjust=1, vjust=0.5, angle=90),
+#           legend.title = element_text(size = 9),
+#           legend.text = element_text(size = 8),
+#           legend.position = "top"
+#     ) + 
+#     labs(title = " Portfolio Risk Ratio per Bank",
+#          x = "Bank",
+#          y = "Ratio") +
+#     scale_y_continuous(labels = scales::percent) +
+#     scale_fill_brewer(type="seq", palette = "Set1")
+
 plot <- uitf_df %>% 
     select(Bank, Risk = `Risk Classification`) %>% 
     mutate(Bank = paste0(str_sub(Bank, 1, 30), "...")) %>% 
     mutate(Risk = factor(Risk, levels=c("Aggressive", "Moderate", "Conservative"))) %>% 
-    group_by(Bank) %>% 
+    group_by(Bank, Risk) %>% 
     mutate(Count = n()) %>% 
     ungroup() %>% 
-    ggplot(aes(x=reorder(Bank, desc(Count)), fill=Risk)) +
-    geom_bar_interactive(aes(tooltip = ..count..), position = "fill", width = 0.95) +
+    group_by(Bank) %>%
+    mutate(Total = n()) %>% 
+    mutate(Ratio = Count/Total) %>% 
+    ungroup() %>% 
+    distinct() %>% 
+    mutate(tooltip = paste(paste0("Bank: ", Bank),
+                           paste0("Risk: ", Risk),
+                           paste0(Count, " out of ", Total, " products"),
+                           sep="\n")) %>% 
+    ggplot(aes(x=reorder(Bank, desc(Count)), y = Ratio, 
+               fill=Risk, tooltip=tooltip)) +
+    geom_bar_interactive(stat = "identity", position = "fill", width = 0.95, alpha=0.75) +
     theme(plot.title = element_text(hjust = 0.5, size = 12),
-          axis.title.y = element_text(size = 9),
-          axis.text.y = element_text(size = 8),
+          axis.title.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
           axis.title.x = element_text(size = 9),
           axis.text.x = element_text(size = 8, hjust=1, vjust=0.5, angle=90),
+          axis.ticks.x = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          panel.grid.minor.y = element_blank(),
+          panel.grid.major.y = element_line(size=1),
           legend.title = element_text(size = 9),
           legend.text = element_text(size = 8),
           legend.position = "top"
     ) + 
     labs(title = " Portfolio Risk Ratio per Bank",
-         x = "Bank",
-         y = "Ratio") +
-    scale_y_continuous(labels = scales::percent) +
+         x = "Bank") +
+    scale_y_continuous(labels = scales::percent, expand=c(0,0)) +
+    scale_x_discrete(expand=c(0,0)) +
     scale_fill_brewer(type="seq", palette = "Set1")
+
 
 ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 ```
@@ -458,13 +507,16 @@ plot <- uitf_df %>%
     mutate(Count = n()) %>% 
     ungroup() %>% 
     ggplot(aes(x=reorder(Classification, desc(Count)), fill=Risk)) +
-    geom_bar_interactive(aes(tooltip = ..count..)) +
+    geom_bar_interactive(aes(tooltip = paste(..count.., "products")), alpha = 0.75) +
     theme(plot.title = element_text(hjust = 0.5, size = 12),
           axis.title.y = element_text(size = 9),
           axis.text.y = element_text(size = 8),
           axis.title.x = element_text(size = 9),
           axis.text.x = element_text(size = 8, hjust=1, angle=90),
-          legend.position = "none"
+          axis.ticks.x = element_blank(),
+          legend.position = "none",
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank()
     ) + 
     facet_grid(. ~ Risk, scales = "free_x", space = "free_x") +
     labs(title = "UITF breakdown by Risk Flavor and Fund Category",
@@ -474,7 +526,6 @@ plot <- uitf_df %>%
 
 ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 ```
-<br />
 <br />
 <br />
 <br />
@@ -564,9 +615,14 @@ ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 
 ```
 <br />
+<br />
+<br />
+
+## Risk Analysis
+<br />
 
 
+## Conclusion
 <br />
-<br />
-<br />
+
 
