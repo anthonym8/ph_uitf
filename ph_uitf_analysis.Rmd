@@ -6,18 +6,20 @@ output:
     theme: default
     highlight: textmate
     code_folding: hide
+    toc: true
+    toc_float: true
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(cache=FALSE)
 ```
 
-# {.tabset}
+<!-- # {.tabset .tabset-pills} -->
 
-## Data Gathering 
+<br />
 
-#### **Prerequisites**
-First, we'll load necessary libraries. Most of these are from the tidyverse which greatly helps in having a consistent workflow.
+## Data Preparation
+
 
 ```{r message=FALSE, warning=FALSE, results="hide"}
 library(dplyr)          # for data frame wrangling
@@ -31,11 +33,14 @@ library(rjson)          # for parsing json files
 library(ggplot2)        # for most of the graphs
 library(ggiraph)        # for adding interactive tooltips to ggplot graphs
 library(RColorBrewer)   # for custom plotting colors
-library(DT)             # for interactive output data tables
+library(DT)             # for outputting interactive data tables
+library(knitr)          # for outputting html kable tables
+library(rmarkdown)      # for outputting html paged tables
 
 library(rvest)          # for parsing html tables
 library(XML)            # for parsing html
 library(RCurl)          # for parsing html
+
 ```
 <br />
 
@@ -62,15 +67,7 @@ uitf_df <- read_csv("./Datasets/uitf_df.csv", col_types = "ccccccnnncccccccn") %
     mutate(`Inception Date` = mdy(`Inception Date`), `Last Uploaded Date` = mdy(`Last Uploaded Date`))
 
 # show a snippet of our data frame
-datatable(uitf_df[c(1,2,3,5)], 
-          filter = "none", 
-          rownames = FALSE,
-          class = 'stripe',
-          options = list(dom = "pt",
-                         pagelength = 10,
-                         autoWidth = TRUE
-                         )
-          )
+paged_table(uitf_df[c(1,2,3,5)])
 
 ```
 <br />
@@ -156,37 +153,41 @@ uitf_symbols <- read_csv("Datasets/uitf_symbols.csv") %>%
     mutate(Symbol = ifelse(str_length(Symbol) < 6, NA, Symbol)) %>% 
     mutate(Symbol = ifelse(!is.na(Symbol), paste(Symbol, "PM", sep=":"), NA))
     
-# display results
-datatable(uitf_symbols, 
-          filter = "none", 
-          rownames = FALSE,
-          class = 'stripe',
-          options = list(dom = "pt",
-                         pagelength = 10,
-                         autoWidth = TRUE
-                         )
-          )
+# display a portion of the results
+uitf_symbols %>% 
+    distinct(Symbol, .keep_all=TRUE) %>% 
+    sample_n(5) %>% 
+    paged_table()
+
 ```
 <br />
 
+
 Before we pull daily price data, let's make sure to clean up our dataset first. Duplicate symbols are red flags for incorrect symbols.
 ```{r warning=FALSE}
+
+# look for symbols with duplicates
 duplicate_symbols <- uitf_symbols$Symbol %>% 
     table() %>% 
     as_data_frame() %>% 
     filter(n > 1)
 
+# show duplicate symbols
 print(duplicate_symbols)
+
 ```
 <br />
+
 That's a lot of duplicates. Let's see which UITFs from our list have these symbols matched to them. From this point, we just have to manually check which ones have incorrectly labelled symbols and remove them from out UITF list. It's very likely that bloomberg does not have daily price data for these which is why our google query returned inaccurate results.
+
 ```{r warning=FALSE, message=FALSE}
+
 # create duplicates table
 duplicates <- uitf_symbols %>% 
     filter(Symbol %in% duplicate_symbols[[1]]) %>% 
     arrange(Symbol)
 
-head(duplicates)
+paged_table(duplicates)
 
 # remove rows with correct labels from our duplicates table
 duplicates <- duplicates[-c(1,5,9,11,13,16,17,20,22,26,29,30,32,34,36,39), ]
@@ -263,7 +264,7 @@ if(!file.exists("./Datasets/uitf_daily_prices_raw.csv")) {
 price_data <- read_csv("./Datasets/uitf_daily_prices_raw.csv")
 
 # show some data
-head(price_data)
+print(price_data)
 
 
 ```
@@ -272,15 +273,58 @@ head(price_data)
 We can have a quick look at our data using a trend chart. Since the prices are on relatively different scales, this graph does not provide much insight and majority of UITFs are compressed in the lower region of the y-axis. However, this confirms that we have our data in a nice format we can work with later on.
 ```{r warning=FALSE, message=FALSE}
 
+# sample 30 UITFs to show in trend chart
+set.seed(10)
+sample_UITFs <- sample(price_data$UITF, 30)
+
+# plot trend chart
 plot <- price_data %>% 
+    filter(UITF %in% sample_UITFs) %>% 
     ggplot(aes(x=Date, y=NAVPU, col=UITF)) +
     geom_line_interactive(aes(tooltip=UITF)) +
-    theme(legend.position = "none")
+    labs(x = "",
+         y = "Net Asset Value per Unit",
+         title = "Daily NAVPUs from 2016/04/26 to 2017/04/25") +
+    theme(legend.position = "none",
+          plot.title = element_text(hjust = 0.5))
 
-ggiraph(ggobj = plot, height_svg=6, width_svg = 9, width = 1)
+ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 
 ```
 
+To compare these UITFs, the raw daily price data must be converted in terms of percent return relative to the earliest price in our data for each UITF (Apr 26, 2016).
+
+```{r warning=FALSE, message=FALSE}
+
+# get reference prices 1 year before Apr 25, 2017
+first_prices <- price_data %>% 
+    group_by(UITF) %>% 
+    arrange(UITF, Date) %>% 
+    slice(1) %>% 
+    select(UITF, First_Price = NAVPU)
+
+# calculate %returns
+returns_data <- price_data %>% 
+    group_by(UITF) %>% 
+    arrange(UITF, Date) %>% 
+    left_join(first_prices) %>% 
+    mutate(Return = ((NAVPU/First_Price)-1)*100) %>% 
+    select(UITF, Date, Return)
+
+# plot all UITF trends
+plot <- returns_data %>% 
+    filter(UITF %in% sample_UITFs) %>% 
+    ggplot(aes(x=Date, y=Return, col=UITF)) +
+    geom_line_interactive(aes(tooltip=UITF)) +
+    labs(x = "",
+         y = "Returns (%)",
+         title = "Overlay of % Return Trends") +
+    theme(legend.position = "none",
+          plot.title = element_text(hjust = 0.5))
+
+ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
+
+```
 
 
 
@@ -301,7 +345,7 @@ ggiraph(ggobj = plot, height_svg=6, width_svg = 9, width = 1)
 
 
 ## Overview of UITFs
-
+<br />
 
 #### **BPI has the widest array of UITF products among banks in PH**
 Plotting the number of different UITF products per bank shows BPI having the largest portfolio with 27 different products followed by BDO with 21 and Metrobank with 17.
@@ -436,6 +480,7 @@ ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 <br />
 
 ## Performance Analysis
+<br />
 
 #### **Top Performing UITFs**
 In this section we will review which UITFs performed best for the past year. Our key metric is year-over-year returns (YOY) from Apr 26, 2016 to Apr 25, 2017. The table below shows all UITFs and their performance in descending order. Feel free to navigate through each bank and/or each classification.
@@ -490,25 +535,7 @@ datatable(top_uitfs,
 ##### **Money Market Funds**
 ```{r warning=FALSE, message=FALSE}
 
-# get reference prices 1 year before Apr 25, 2017
-first_prices <- price_data %>% 
-    group_by(UITF) %>% 
-    arrange(UITF, Date) %>% 
-    slice(1) %>% 
-    select(UITF, First_Price = NAVPU)
 
-scaled_prices <- price_data %>% 
-    group_by(UITF) %>% 
-    arrange(UITF, Date) %>% 
-    left_join(first_prices) %>% 
-    mutate(Return = ((NAVPU/First_Price)-1)*100) %>% 
-    select(UITF, Date, Return) %>% 
-    # merge UITF info
-    inner_join(uitf_df[, c("Symbol", "Bank", "Fund Name", "Classification", "Risk Classification")], by = c("UITF" = "Symbol"))
-
-ggplot(filter(scaled_prices, Classification=="Money - Market Funds"), aes(x=Date, y=Return, group=UITF, col=`Bank`)) +
-    geom_line_interactive(aes(tooltip=UITF), alpha=0.8) +
-    scale_color_brewer(palette="Set1")
 
 ```
 
