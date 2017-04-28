@@ -343,22 +343,22 @@ plot <- uitf_df %>%
     group_by(Bank) %>% 
     summarize(Portfolio_Count = n()) %>% 
     ungroup() %>% 
-    mutate(tooltip = paste(paste0("Bank: ", Bank),
-                           paste0("Products: ", Portfolio_Count),
+    mutate(tooltip = paste(Bank,
+                           paste(Portfolio_Count, "products"),
                            sep = "\n")) %>% 
     ggplot(aes(x=reorder(Bank, desc(Portfolio_Count)), 
                y=Portfolio_Count, 
                tooltip = tooltip,
                label = Portfolio_Count)) +
-    geom_bar_interactive(stat = "identity", fill = "darkgreen", width = 0.95) +
-    geom_label(nudge_y = 1.5, alpha=0.4) +
+    geom_bar_interactive(stat = "identity", fill = "grey30", width = 0.95) +
+    geom_text(nudge_y = 1.5, alpha=0.8) +
     theme(plot.title = element_text(hjust = 0.5, size = 12),
           axis.title.y = element_text(size = 9),
           axis.text.y = element_blank(),
           axis.ticks.y = element_blank(),
           axis.text.x = element_text(size = 8, hjust=1, angle=90),
-          panel.grid.major.x = element_blank(),
-          panel.grid.minor.x = element_blank()
+          panel.grid = element_blank(),
+          panel.background = element_blank()
     ) + 
     labs(title = "Portfolio Size per Bank",
          x = "",
@@ -426,29 +426,6 @@ ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 #### **Top banks offer a mix of moderate risk and aggressive types of UITFs**
 
 ```{r warning=FALSE}
-# plot <- uitf_df %>% 
-#     select(Bank, Risk = `Risk Classification`) %>% 
-#     mutate(Bank = paste0(str_sub(Bank, 1, 30), "...")) %>% 
-#     mutate(Risk = factor(Risk, levels=c("Aggressive", "Moderate", "Conservative"))) %>% 
-#     group_by(Bank) %>% 
-#     mutate(Count = n()) %>% 
-#     ungroup() %>% 
-#     ggplot(aes(x=reorder(Bank, desc(Count)), fill=Risk)) +
-#     geom_bar_interactive(aes(tooltip = ..prop..), position = "fill", width = 0.95) +
-#     theme(plot.title = element_text(hjust = 0.5, size = 12),
-#           axis.title.y = element_text(size = 9),
-#           axis.text.y = element_text(size = 8),
-#           axis.title.x = element_text(size = 9),
-#           axis.text.x = element_text(size = 8, hjust=1, vjust=0.5, angle=90),
-#           legend.title = element_text(size = 9),
-#           legend.text = element_text(size = 8),
-#           legend.position = "top"
-#     ) + 
-#     labs(title = " Portfolio Risk Ratio per Bank",
-#          x = "Bank",
-#          y = "Ratio") +
-#     scale_y_continuous(labels = scales::percent) +
-#     scale_fill_brewer(type="seq", palette = "Set1")
 
 plot <- uitf_df %>% 
     select(Bank, Risk = `Risk Classification`) %>% 
@@ -522,7 +499,8 @@ plot <- uitf_df %>%
     labs(title = "UITF breakdown by Risk Flavor and Fund Category",
          x = "Category",
          y = "Count") +
-    scale_fill_brewer(palette = "Set1")
+    scale_fill_brewer(palette = "Set1") +
+    scale_y_continuous(limits = c(0,55), breaks = seq(0,50,10))
 
 ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 ```
