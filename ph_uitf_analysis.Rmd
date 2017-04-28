@@ -269,7 +269,7 @@ head(price_data)
 ```
 
 <br />
-We can plot a quick line graph of our price data. This graph does not provide much insight and majority of UITFs are compressed in the lower region of the vertical axis. However, this shows that we have our data in a nice format we can work with later on.
+We can have a quick look at our data using a trend chart. Since the prices are on relatively different scales, this graph does not provide much insight and majority of UITFs are compressed in the lower region of the y-axis. However, this confirms that we have our data in a nice format we can work with later on.
 ```{r warning=FALSE, message=FALSE}
 
 plot <- price_data %>% 
@@ -313,17 +313,60 @@ plot <- uitf_df %>%
     mutate(Portfolio_Count = n()) %>% 
     ungroup() %>% 
     ggplot(aes(x=reorder(Bank, desc(Portfolio_Count)))) +
-    geom_bar_interactive(aes(tooltip = ..count..), fill = "darkgreen") +
+    geom_bar_interactive(aes(tooltip = ..count..), fill = "darkgreen", width = 0.95) +
     theme(plot.title = element_text(hjust = 0.5, size = 12),
           axis.title.y = element_text(size = 9),
           axis.text.y = element_text(size = 8),
           axis.text.x = element_text(size = 8, hjust=1, angle=90)
     ) + 
+    scale_y_continuous(limits = c(0,30)) +
     labs(title = "Portfolio Size per Bank",
          x = "",
          y = "Count")
 
-ggiraph(ggobj = plot, height_svg=6, width_svg = 9, width = 1)
+ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
+```
+<br />
+
+
+#### **Timeline of UITF Inceptions**
+Looking at the dotplot below, we see that BPI was the first to introduce a couple of UITFs in 1994. We also have the largest number of UITF introductions on 2005 from multiple banks and another series of introductions from 2013 to 2016.
+
+```{r warning=FALSE, message=FALSE}
+# update our uitf matrix with those which we have daily price data only
+uitf_df <- uitf_df %>% 
+    inner_join(uitf_symbols)
+
+# initialize custom categorical colors
+all_qual_palettes <- brewer.pal.info %>% 
+    mutate(Palette = rownames(.)) %>% 
+    filter(category == "qual") %>% 
+    select(Palette, maxcolors)
+
+all_qual_colors <- map2(all_qual_palettes$maxcolors,
+                            all_qual_palettes$Palette,
+                            brewer.pal) %>% 
+    unlist()
+
+my_qual_colors <- all_qual_colors[1:length(unique(uitf_df$Bank))]
+
+# dot plot of UITF introductions
+plot <- uitf_df %>% 
+    transmute(Year = year(`Inception Date`), Bank = Bank) %>% 
+    ggplot(aes(x = Year, fill = Bank, col = Bank)) +
+    geom_dotplot(method = "histodot", binwidth = 1, dotsize = 0.55, stackdir = "center", stackgroups = TRUE) +
+    coord_cartesian(xlim = c(1994, 2018)) +
+    scale_x_continuous(breaks = seq(1990,2020, by = 2)) +
+    scale_y_continuous(breaks = NULL) +
+    labs(x = "Year", y = "Count", title = "Timeline of UITF Inceptions") +
+    theme(legend.text = element_text(size = 9),
+          legend.key.size = unit(5, "mm"),
+          plot.title = element_text(hjust = 0.5),
+          axis.text.x = element_text(vjust = 0.5, angle = 45)) +
+    scale_fill_manual(values = my_qual_colors) +
+    scale_color_manual(values = my_qual_colors)
+
+ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 ```
 <br />
 
@@ -339,7 +382,7 @@ plot <- uitf_df %>%
     mutate(Count = n()) %>% 
     ungroup() %>% 
     ggplot(aes(x=reorder(Bank, desc(Count)), fill=Risk)) +
-    geom_bar_interactive(aes(tooltip = ..count..), position = "fill") +
+    geom_bar_interactive(aes(tooltip = ..count..), position = "fill", width = 0.95) +
     theme(plot.title = element_text(hjust = 0.5, size = 12),
           axis.title.y = element_text(size = 9),
           axis.text.y = element_text(size = 8),
@@ -355,7 +398,7 @@ plot <- uitf_df %>%
     scale_y_continuous(labels = scales::percent) +
     scale_fill_brewer(type="seq", palette = "Set1")
 
-ggiraph(ggobj = plot, height_svg=6, width_svg = 9, width = 1)
+ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 ```
 <br />
 
@@ -385,75 +428,14 @@ plot <- uitf_df %>%
          y = "Count") +
     scale_fill_brewer(palette = "Set1")
 
-ggiraph(ggobj = plot, height_svg=6, width_svg = 9, width = 1)
+ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 ```
 <br />
-
-#### **Timeline of UITF Inceptions**
-Looking at the dotplot below, we see that BPI was the first to introduce a couple of UITFs in 1994. We also have the largest number of UITF introductions on 2005 from multiple banks and another series of introductions from 2013 to 2016.
-
-```{r warning=FALSE, message=FALSE}
-# update our uitf matrix with those which we have daily price data only
-uitf_df <- uitf_df %>% 
-    inner_join(uitf_symbols)
-
-# initialize custom categorical colors
-all_qual_palettes <- brewer.pal.info %>% 
-    mutate(Palette = rownames(.)) %>% 
-    filter(category == "qual") %>% 
-    select(Palette, maxcolors)
-
-all_qual_colors <- map2(all_qual_palettes$maxcolors,
-                            all_qual_palettes$Palette,
-                            brewer.pal) %>% 
-    unlist()
-
-my_qual_colors <- all_qual_colors[1:length(unique(uitf_df$Bank))]
-
-# dot plot of UITF introductions
-plot <- uitf_df %>% 
-    transmute(Year = year(`Inception Date`), Bank = Bank) %>% 
-    ggplot(aes(x = Year, fill = Bank, col = Bank)) +
-    geom_dotplot(method = "histodot", binwidth = 1, dotsize = 0.7, stackdir = "center", stackgroups = TRUE) +
-    coord_cartesian(xlim = c(1994, 2018)) +
-    scale_x_continuous(breaks = seq(1990,2020, by = 2)) +
-    scale_y_continuous(breaks = NULL) +
-    labs(x = "Year", y = "Count", title = "Timeline of UITF Inceptions") +
-    theme(legend.text = element_text(size = 9),
-          legend.key.size = unit(5, "mm"),
-          plot.title = element_text(hjust = 0.5),
-          axis.text.x = element_text(vjust = 0.5, angle = 45)) +
-    scale_fill_manual(values = my_qual_colors) +
-    scale_color_manual(values = my_qual_colors)
-
-ggiraph(ggobj = plot, height_svg=6, width_svg = 9, width = 1)
-```
 <br />
 <br />
 <br />
 
 ## Performance Analysis
-
-#### **ROI**
-
-```{r}
-
-price_data %>% 
-    group_by(UITF) %>% 
-    mutate(Price_Date = ifelse(Date == min(Date), "Old", NA)) %>% 
-    mutate(Price_Date = ifelse(Date == max(Date), "New", Price_Date)) %>% 
-    na.omit() %>% 
-    select(UITF, NAVPU, Price_Date) %>% 
-    spread(Price_Date, NAVPU) %>% 
-    mutate(YOY = 100*(New/Old - 1)) %>% 
-    arrange(desc(YOY)) %>% 
-    inner_join(uitf_df[, c("Symbol", "Bank", "Fund Name", "Classification", "Risk Classification")], by = c("UITF" = "Symbol")) %>% 
-    ggplot(aes(x = Classification, y = YOY, fill = Classification, col = Classification)) +
-    geom_violin(width = 1.5) +
-    geom_boxplot(col = "black", fill = "white", width = 0.07, alpha = 0.5) +
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
-```
-<br />
 
 #### **Top Performing UITFs**
 In this section we will review which UITFs performed best for the past year. Our key metric is year-over-year returns (YOY) from Apr 26, 2016 to Apr 25, 2017. The table below shows all UITFs and their performance in descending order. Feel free to navigate through each bank and/or each classification.
@@ -503,6 +485,60 @@ datatable(top_uitfs,
           )    
     
 ```
+<br />
+
+##### **Money Market Funds**
+```{r warning=FALSE, message=FALSE}
+
+# get reference prices 1 year before Apr 25, 2017
+first_prices <- price_data %>% 
+    group_by(UITF) %>% 
+    arrange(UITF, Date) %>% 
+    slice(1) %>% 
+    select(UITF, First_Price = NAVPU)
+
+scaled_prices <- price_data %>% 
+    group_by(UITF) %>% 
+    arrange(UITF, Date) %>% 
+    left_join(first_prices) %>% 
+    mutate(Return = ((NAVPU/First_Price)-1)*100) %>% 
+    select(UITF, Date, Return) %>% 
+    # merge UITF info
+    inner_join(uitf_df[, c("Symbol", "Bank", "Fund Name", "Classification", "Risk Classification")], by = c("UITF" = "Symbol"))
+
+ggplot(filter(scaled_prices, Classification=="Money - Market Funds"), aes(x=Date, y=Return, group=UITF, col=`Bank`)) +
+    geom_line_interactive(aes(tooltip=UITF), alpha=0.8) +
+    scale_color_brewer(palette="Set1")
+
+```
+
+
+#### **ROI**
+
+```{r warning=FALSE, message=FALSE}
+
+plot <- price_data %>% 
+    group_by(UITF) %>% 
+    mutate(Price_Date = ifelse(Date == min(Date), "Old", NA)) %>% 
+    mutate(Price_Date = ifelse(Date == max(Date), "New", Price_Date)) %>% 
+    na.omit() %>% 
+    select(UITF, NAVPU, Price_Date) %>% 
+    spread(Price_Date, NAVPU) %>% 
+    mutate(YOY = 100*(New/Old - 1)) %>% 
+    arrange(desc(YOY)) %>% 
+    inner_join(uitf_df[, c("Symbol", "Bank", "Fund Name", "Classification", "Risk Classification")], by = c("UITF" = "Symbol")) %>% 
+    ggplot(aes(x = Classification, y = YOY, fill = Classification, col = Classification)) +
+    geom_violin(width = 1.5) +
+    geom_boxplot_interactive(col = "black", fill = "white", width = 0.07, alpha = 0.5) +
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+    labs(y = "Year over Year (%)")
+
+ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
+
+```
+<br />
+
+
 <br />
 <br />
 <br />
