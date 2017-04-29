@@ -18,25 +18,52 @@ knitr::opts_chunk$set(cache=FALSE)
 
 <br />
 
-## Introduction
+
+
+
+# Introduction
+
+This notebook documents my analysis on Unit Investment Trust Funds. The motivation for this is that I'm looking to invest again in UITFs. What's good about UITFs is that you can have a diversified investment with low capital and at the convenience of having professional portfolio managers handle these funds for you. This time however, I plan to be more knowledgeable before I dive in so I can know all my options and plan on a good enough strategy to meet my investment objectives.
+
+Specific questions in mind for this analysis are the following:
+
+1. What are the available UITFs in the Philippines? Which banks offer them?
+2. What are the different classes of UITFs? How do they differ from one another?
+3. Which can be considered the best if I'm aiming for good returns from my investment? Or if I want to preserve my capital?
+
+Also note that this is an R markdown notebook. Feel free to expand the code chunks if you're interested in looking at the code used for this analysis.
+
 <br />
 
-## Data Preparation
+
+
+
+# Data Preparation
+
+This section describes the data gathering and processing steps. The actual analysis starts in the subsequent section. Below are the three data sets necessary for this analysis, all of which are scraped from the internet. The data gathering pipeline for each are described after  
+
+|     | Dataset                   | Description                                   |
+|:---:|:--------------------------|:----------------------------------------------|
+|  1  | UITF Matrix               | Complete list of all available UITFs in the                                          Philippines + other important information for                                        each UITF |
+|  2  | Bloomberg ticker symbols  | Ticker symbols used in Bloomberg.com. This is for                                     extracting daily price data. |
+|  3  | Daily price data          | Daily price data for the the past year for each                                      UITF. This is for comparing performance between                                      funds. |
 
 ```{r message=FALSE, warning=FALSE, results="hide"}
+
+# load R packages
 library(dplyr)          # for data frame wrangling
 library(readr)          # for reading and writing flat files
 library(stringr)        # for string manipulation
 library(lubridate)      # for date string parsing
-library(purrr)          # for tidy functional programming\
+library(purrr)          # for tidy functional programming
 library(tidyr)          # for data frame reshaping
 library(rjson)          # for parsing json files
+library(Hmisc)          # for string cleaning
 
 library(ggplot2)        # for most of the graphs
 library(ggiraph)        # for adding interactive tooltips to ggplot graphs
 library(RColorBrewer)   # for custom plotting colors
 library(DT)             # for outputting interactive data tables
-library(knitr)          # for outputting html kable tables
 library(rmarkdown)      # for outputting html paged tables
 
 library(rvest)          # for parsing html tables
@@ -44,9 +71,8 @@ library(XML)            # for parsing html
 library(RCurl)          # for parsing html
 
 ```
-<br />
 
-#### **Comprehensive UITF List**
+### UITF Matrix
 
 For our first dataset, we'll pull basic information about the available UITFs in the Philippines from [uitf.com](http://www.uitf.com.ph). We'll use the `rvest` package to parse tables in web pages then save it as CSV to our local folder.  
 
@@ -66,36 +92,55 @@ if(!file.exists("./Datasets/uitf_df.csv")) {
 
 # load data into memory
 uitf_df <- read_csv("./Datasets/uitf_df.csv", col_types = "ccccccnnncccccccn") %>% 
-    mutate(`Inception Date` = mdy(`Inception Date`), `Last Uploaded Date` = mdy(`Last Uploaded Date`))
+        mutate(`Inception Date` = mdy(`Inception Date`), `Last Uploaded Date` = mdy(`Last Uploaded Date`)) %>% 
+    mutate(`Fund Name` = str_replace(`Fund Name`, "\\(.*\\)", ""))
+
+# clean fund names
+for(i in seq_along(uitf_df$Bank)) {
+    message(i)
+    uitf_df$`Fund Name`[i] <- uitf_df$`Fund Name`[i] %>% 
+        str_split(" ") %>% 
+        unlist() %>% 
+        map_chr(
+            function(x){
+                ifelse(
+                    str_detect(string = uitf_df$Bank[i], pattern = x),
+                    x, capitalize(tolower(x))
+                )
+            }
+        ) %>% 
+        paste(collapse = " ")
+}
 
 # show a snippet of our data frame
-paged_table(uitf_df[c(1,2,3,5)])
+paged_table(uitf_df[1:9, c(1,2,3,5)])
 
 ```
 <br />
 
-#### **Scraping Daily Price Data**
-To compare the performance of these UITFs, we need the following for each UITF:
+### Bloomberg Ticker Symbols
 
-* Ticker symbol used in Bloomberg 
-* Daily prices for the past year  
-<br />
+#### Bloomberg Symbol Lookup
 
-##### **Extracting Ticker Symbols thru Google Search**
+Our second dataset is a mapping of Bloomberg ticker symbols to our list of UITFs. This is a requirement for scraping daily price data later. For this, we're using Bloomberg's Symbol Lookup because it can be queried easily using urls in this format: `www.bloomberg.com/markets/symbolsearch?query=` + `<search string>`
+
+#### Extracting Ticker Symbols thru Google Search
+
 There aren't many sites offering daily prices of all UITFs in our list. Bank websites show data for their products only of course and parsing each individual site is inefficient. **uitf.com** has all the data we need but is unscrapable because it requires you to answer a captcha first.  
 
 So we're going to pull daily price data from [bloomberg.com](https://www.bloomberg.com/) through a clever hack. But first we need to know the ticker symbols used for each UITF in bloomberg. There's no readily available data for this so we'll have to rely on Google's intelligence for this one.
 <br /><br />
 
-##### **Our custom Google query function**
-This function queries *Google Search* and returns the ticker symbol we need. All we need to do is pass it a string which will be used for our google search. The string follows this format: `www.bloomberg.com/quote` + `<bank name>` + `<UITF name>`.
+#### Our custom Google query function
+
+This function queries *Google Search* and returns the ticker symbol we need. All we need to do is pass it a string which will be used for our google search. The string follows this format: `www.bloomberg.com/quote` + `<bank name>` + `<UITF name>`. Expand the code chunk below to see the function code.
 
 ```{r message=FALSE, warning=FALSE}
 
 search_bloomberg_symbol <- function(search_string) {
     
     # query google search and parse html document
-    html <- getForm("https://www.google.com.ph/search", hl="tl", lr="", q=search_string, btnG="Search") %>%
+    html <- getForm("http://www.google.com.ph/search", hl="en", lr="", q=search_string, btnG="Search") %>%
         htmlTreeParse()
     
     # descend through html hierarchy to narrow down our search
@@ -122,11 +167,11 @@ search_bloomberg_symbol <- function(search_string) {
 }
 
 ```
-<br />
 
+#### Querying Google Search
 
-##### **Querying Google Search for Ticker Symbols**
 We use our custom function above to extract ticker symbols from google search results for each UITF. Using this method, not all UITFs were correctly matched to their symbols. It is very likely that these UITFs do not have data hosted on [bloomberg.com](http://www.bloomberg.com) so we just have to exclude them from our analysis.
+
 ```{r message=FALSE, warning=FALSE}
 
 if(!file.exists("./Datasets/uitf_symbols.csv")) {
@@ -138,7 +183,8 @@ if(!file.exists("./Datasets/uitf_symbols.csv")) {
     mutate(Symbol = NA)
     
     # query symbols for all UITFs
-    for(i in 1:nrow(uitf_symbols)) {
+    for(i in 97:nrow(uitf_symbols)) {
+        message(i)
         search_string <- uitf_symbols$search_string[i]
         uitf_symbols$Symbol[i] <- search_bloomberg_symbol(search_string)
         message(paste0(i, " out of ", nrow(uitf_symbols)))
@@ -164,8 +210,10 @@ uitf_symbols %>%
 ```
 <br />
 
+#### Data cleaning
 
 Before we pull daily price data, let's make sure to clean up our dataset first. Duplicate symbols are red flags for incorrect symbols.
+
 ```{r warning=FALSE}
 
 # look for symbols with duplicates
@@ -178,7 +226,6 @@ duplicate_symbols <- uitf_symbols$Symbol %>%
 print(duplicate_symbols)
 
 ```
-<br />
 
 That's a lot of duplicates. Let's see which UITFs from our list have these symbols matched to them. From this point, we just have to manually check which ones have incorrectly labelled symbols and remove them from out UITF list. It's very likely that bloomberg does not have daily price data for these which is why our google query returned inaccurate results.
 
@@ -204,24 +251,24 @@ uitf_symbols <- uitf_symbols %>%
 rm(duplicates, duplicate_symbols)
 
 ```
-
-
-
 <br />
 
-##### **Pulling Daily Prices from Bloomberg.com**
+### Daily Price Data
+
+#### Extracting data from Bloomberg.com
+
 Now that we have the ticker symbols for most of the UITFs in our matrix, we can pull daily price data for each one for the past year. We'll get this data from Bloomberg using this simple hack which exposes the raw data used in their graphs. We just have to access their site as follows: `www.bloomberg.com/markets/chart/data/1Y/` + `<ticker symbol>`. This returns the raw data in `JSON` format. See example below for `BPIEQUI:PM`.
 
 ```{r message=FALSE, warning=FALSE}
 # parse JSON data and show first 10 elements
-fromJSON(file = "https://www.bloomberg.com/markets/chart/data/1Y/BPIEQUI:PM") %>% 
-    `[[`("data_values") %>% 
-    `[`(1:10) %>% 
-    list("data_values" = .) %>% 
+fromJSON(file = "https://www.bloomberg.com/markets/chart/data/1Y/BPIEQUI:PM") %>%
+    `[[`("data_values") %>%
+    `[`(1:10) %>%
+    list("data_values" = .) %>%
     toJSON()
 ```
-
 <br />
+
 We merge all data for all UITFs in a long data frame and then save to a local folder again. At this point we're more concerned with collecting data first so this format ensures we don't lose any data during collection. Later on we will reshape this data frame as needed in our subsequent analyses.
 ```{r message=FALSE, warning=FALSE}
 
@@ -270,9 +317,12 @@ print(price_data)
 
 
 ```
-
 <br />
+
+#### Quick look at our data
+
 We can have a quick look at our data using a trend chart. Since the prices are on relatively different scales, this graph does not provide much insight and majority of UITFs are compressed in the lower region of the y-axis. However, this confirms that we have our data in a nice format we can work with later on.
+
 ```{r warning=FALSE, message=FALSE}
 
 # sample 30 UITFs to show in trend chart
@@ -293,8 +343,11 @@ plot <- price_data %>%
 ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1, tooltip_opacity=0.8)
 
 ```
+<br />
 
-To compare these UITFs, the raw daily price data must be converted in terms of percent return relative to the earliest price in our data for each UITF (Apr 26, 2016).
+#### Calculating returns
+
+To compare these UITFs, the raw daily price data must be converted in terms of percent return relative to the earliest price in our data for each UITF (Apr 26, 2016). Take a look at the same subset of our price data represented as %returns.
 
 ```{r warning=FALSE, message=FALSE}
 
@@ -331,10 +384,34 @@ ggiraph(ggobj=plot, height_svg=5, width_svg=9, width=1, tooltip_opacity=0.8)
 <br />
 
 
-## Overview of UITFs
+
+
+# Overview of UITFs
+
+### Available UITFs
+
+The table below shows all available UITFs per bank. You can filter by bank using the search box below the table.
+
+```{r warning=FALSE, message=FALSE}
+
+# show interactive list of UITFs using DT
+uitf_df %>% 
+    select(Bank, `Fund Name`) %>% 
+    mutate(Bank = as.factor(Bank)) %>% 
+    datatable(filter = "bottom", 
+              class = 'stripe',
+              options = list(dom = "lpt",
+                             pageLength = 5,
+                             lengthMenu = c(5, 10, 15, 20),
+                             autoWidth = FALSE
+                        )
+             )    
+
+```
 <br />
 
-#### **BPI has the widest array of UITF products among banks in PH**
+#### BPI has the widest array of UITF products among banks in PH
+
 Plotting the number of different UITF products per bank shows BPI having the largest portfolio with 27 different products followed by BDO with 21 and Metrobank with 17.
 
 ```{r warning=FALSE}
@@ -369,7 +446,8 @@ ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 <br />
 
 
-#### **Timeline of UITF Inceptions**
+### Timeline of UITF Inceptions
+
 Looking at the dotplot below, we see that BPI was the first to introduce a couple of UITFs in 1994. We also have the largest number of UITF introductions on 2005 from multiple banks and another series of introductions from 2013 to 2016.
 
 ```{r warning=FALSE, message=FALSE}
@@ -422,8 +500,7 @@ ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 ```
 <br />
 
-
-#### **Top banks offer a mix of moderate risk and aggressive types of UITFs**
+### Top banks offer a mix of moderate risk and aggressive types of UITFs
 
 ```{r warning=FALSE}
 
@@ -445,7 +522,7 @@ plot <- uitf_df %>%
                            sep="\n")) %>% 
     ggplot(aes(x=reorder(Bank, desc(Count)), y = Ratio, 
                fill=Risk, tooltip=tooltip)) +
-    geom_bar_interactive(stat = "identity", position = "fill", width = 0.95, alpha=0.75) +
+    geom_bar_interactive(stat = "identity", position = "fill", width = 0.95, alpha=0.8) +
     theme(plot.title = element_text(hjust = 0.5, size = 12),
           axis.title.y = element_blank(),
           axis.text.y = element_blank(),
@@ -453,11 +530,8 @@ plot <- uitf_df %>%
           axis.title.x = element_text(size = 9),
           axis.text.x = element_text(size = 8, hjust=1, vjust=0.5, angle=90),
           axis.ticks.x = element_blank(),
-          panel.grid.major.x = element_blank(),
-          panel.grid.minor.x = element_blank(),
-          panel.grid.minor.y = element_blank(),
-          panel.grid.major.y = element_line(size=1),
-          legend.title = element_text(size = 9),
+          panel.grid = element_blank(),
+          panel.background = element_blank(),
           legend.text = element_text(size = 8),
           legend.position = "top"
     ) + 
@@ -473,7 +547,8 @@ ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 <br />
 
 
-#### **Aggressive UITFs are mostly comprised of equity-tracking funds**
+### Aggressive UITFs are mostly comprised of equity-tracking funds
+
 Aggressive equity funds track the Philippine Stock Exchange index (PSEi) 100% or in combination with another industry index. Moderate risk UITFs on the other hand are composed of a wider class of funds from balanced funds to bond funds and some money-market funds. Last, conservative funds are mostly money-market funds which are invested in short-term debt securities like treasury bills.
 
 ```{r warning=FALSE, message=FALSE}
@@ -496,8 +571,8 @@ plot <- uitf_df %>%
           panel.grid.minor.x = element_blank()
     ) + 
     facet_grid(. ~ Risk, scales = "free_x", space = "free_x") +
-    labs(title = "UITF breakdown by Risk Flavor and Fund Category",
-         x = "Category",
+    labs(title = "UITF breakdown by Risk Flavor and Fund Classification",
+         x = "Classification",
          y = "Count") +
     scale_fill_brewer(palette = "Set1") +
     scale_y_continuous(limits = c(0,55), breaks = seq(0,50,10))
@@ -508,10 +583,10 @@ ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 <br />
 <br />
 
-## Performance Analysis
-<br />
+# Performance Analysis
 
-#### **Top Performing UITFs**
+### Top Performing UITFs
+
 In this section we will review which UITFs performed best for the past year. Our key metric is year-over-year returns (YOY) from Apr 26, 2016 to Apr 25, 2017. The table below shows all UITFs and their performance in descending order. Feel free to navigate through each bank and/or each classification.
 
 ```{r warning=FALSE, message=FALSE}
@@ -561,7 +636,7 @@ datatable(top_uitfs,
 ```
 <br />
 
-##### **Money Market Funds**
+#### Money Market Funds
 ```{r warning=FALSE, message=FALSE}
 
 
@@ -569,7 +644,7 @@ datatable(top_uitfs,
 ```
 
 
-#### **ROI**
+### ROI
 
 ```{r warning=FALSE, message=FALSE}
 
@@ -593,14 +668,13 @@ ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 
 ```
 <br />
-<br />
-<br />
-
-## Risk Analysis
-<br />
 
 
-## Conclusion
+# Risk Analysis
+<br />
+
+
+# Conclusion
 <br />
 
 
