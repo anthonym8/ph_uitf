@@ -38,17 +38,28 @@ Also note that this is an R markdown notebook. Feel free to expand the code chun
 
 
 
-# Data Preparation
+# Data Gathering & Preparation
 
-This section describes the data gathering and processing steps. The actual analysis starts in the subsequent section. Below are the three data sets necessary for this analysis, all of which are scraped from the internet. The data gathering pipeline for each are described after  
+This section describes the data gathering and processing steps. You can skip to the next section to start reading about the actual analysis. Below are the three raw data sets required for this analysis. The data gathering and preprocessing steps are described after.
 
-|     | Dataset                   | Description                                   |
+|     | Raw Data                  | Description                                   |
 |:---:|:--------------------------|:----------------------------------------------|
-|  1  | UITF Matrix               | Complete list of all available UITFs in the                                          Philippines + other important information for                                        each UITF |
-|  2  | Bloomberg ticker symbols  | Ticker symbols used in Bloomberg.com. This is for                                     extracting daily price data. |
-|  3  | Daily price data          | Daily price data for the the past year for each                                      UITF. This is for comparing performance between                                      funds. |
+|  1  | Complete UITF List        | Complete list of the names and ticker symbols of all available UITFs in the Philippines + some basic info |
+|  2  | Daily Price Data          | Daily price data for the the past year for each                                      UITF |
+|  3  | Fund Information          | All other important information including fund and risk classifications, etc. for each UITF |
+
+<br />
+These 3 raw data sets will then be transformed into our pair of working datasets which are:
+
+|     | Processed Data            | Description                                   |
+|:---:|:--------------------------|:----------------------------------------------|
+|  1  | UITF Matrix               | Comprehensive data frame containing all important information on all available UITFs |
+|  2  | Daily Percent Returns     | Daily price data for the past year represented as percent returns relative to starting date |
 
 ```{r message=FALSE, warning=FALSE, results="hide"}
+
+# clear workspace
+rm(list = ls())
 
 # load R packages
 library(dplyr)          # for data frame wrangling
@@ -72,192 +83,192 @@ library(RCurl)          # for parsing html
 
 ```
 
-### UITF Matrix
+### Raw Data: **UITF List**
 
-For our first dataset, we'll pull basic information about the available UITFs in the Philippines from [uitf.com](http://www.uitf.com.ph). We'll use the `rvest` package to parse tables in web pages then save it as CSV to our local folder.  
+#### Pulling all PH ticker symbols from Bloomberg
 
-After loading the file with our specified column data types, we transform the date columns from strings to dates using functions from the `lubridate` package. Take a glimpse at a portion of the data we just extracted.
+For our first dataset, we'll pull a list of all available UITFs from [Bloomberg.com](https://www.bloomberg.com/markets/symbolsearch?). This is done using Bloomberg's symbol lookup tool. We're going to do a basic search for all ticker symbols for all Philippines-based stocks and products. From this set, we'll filter in only those symbols for UITFs, our product of interest.
 
-```{r}
-url <- "http://www.uitf.com.ph/print_matrix.php?sort=&sortby=bank&sortorder=asc&class_id=&currency="
+```{r warning=FALSE, message=FALSE}
 
-# parse and save data in to local folder
-if(!file.exists("./Datasets/uitf_df.csv")) {
-    read_html(url) %>% 
-        html_nodes(xpath='//*[@class="hovertable"]') %>% 
-        html_table() %>% 
-        `[[`(1) %>% 
-        write_csv("Datasets/uitf_df.csv")
+# scrape PH symbols from bloomberg.com
+if(!file.exists("./Datasets/all_symbols.csv")) {
+    # query bloomberg symbol lookup: "PH"
+    url <- "https://www.bloomberg.com/markets/symbolsearch?query=PH"
+    
+    # initialize results table
+    all_symbols <- data_frame(Symbol = character(),
+                              Name = character(),
+                              Country = character(),
+                              Type = character(),
+                              `Industry/Objective` = character())
+    
+    # scrape all pages of query results
+    for(i in 1:199) {
+        result <- read_html(paste0(url, "&page=", i)) %>% 
+            html_nodes(xpath='//*[@class="dual_border_data_table alt_rows_stat_table tabular_table"]') %>% 
+            html_table()
+        
+        all_symbols <- bind_rows(all_symbols, result)
+    }
+    
+    # save results to local folder
+    write_csv(all_symbols, "./Datasets/all_symbols.csv")
+    rm(all_symbols, url, result)
 }
 
-# load data into memory
-uitf_df <- read_csv("./Datasets/uitf_df.csv", col_types = "ccccccnnncccccccn") %>% 
-        mutate(`Inception Date` = mdy(`Inception Date`), `Last Uploaded Date` = mdy(`Last Uploaded Date`)) %>% 
-    mutate(`Fund Name` = str_replace(`Fund Name`, "\\(.*\\)", ""))
+# load to memory
+all_symbols <- read_csv("./Datasets/all_symbols.csv") %>% 
+    select(Symbol, Name, Country, Type)
 
-# clean fund names
-for(i in seq_along(uitf_df$Bank)) {
-    message(i)
-    uitf_df$`Fund Name`[i] <- uitf_df$`Fund Name`[i] %>% 
-        str_split(" ") %>% 
+# show first 5 rows in document
+paged_table(head(all_symbols, n=3))
+
+```
+<br />
+
+We will do a quick filter for just PH open-end fund type symbols. Next is we need to remove other fund types from this dataset such as mutual funds and VULs since we're only interested in UITFs. For this, we need need to gather info from each symbol's quote page from [Bloomberg.com/quote/<ticker symbol>](https://www.bloomberg.com/quote) such as fund profile, inception date, currency, etc. We can access some of the information in this quote page in JSON format using this web address: `https://www.bloomberg.com/markets/api/quote-page/` + `<ticker symbol>`
+
+```{r warning=FALSE, message=FALSE}
+
+# gather basic info for each symbol
+if(!file.exists("./Datasets/symbol_info.csv")) {
+    
+    # filter in PH open-end funds only
+    symbol_info <- all_symbols %>% 
+        filter(Country == "PH", Type == "Open-End Fund") %>% 
+        select(Symbol, Name) %>% 
+        mutate(Profile = "", 
+               Website = "",
+               `Fund Type` = "",
+               `Inception Date` = "",
+               Currency = "")
+    
+    # scrape profile and other info for each symbol
+    for(i in 1:nrow(symbol_info)) {
+        print(i)
+        
+        # construct url for json data
+        url <- paste0("https://www.bloomberg.com/markets/api/quote-page/",
+                      filtered_symbols$Symbol[i])
+        
+        # scrape json data
+        json_data <- fromJSON(file = url) %>% 
+            unlist() %>% 
+            data_frame(key = names(.), value = .)
+        
+        # define function for extracting specific values from json data
+        find_value <- function(keyword, df) {
+            ifelse(
+                !any(str_detect(json_data$key, keyword)), 
+                NA, 
+                df %>% 
+                    filter(str_detect(key, keyword)) %>% 
+                    slice(1) %>% 
+                    `[[`("value")
+            )
+        }
+        
+        # assign values to data frame
+        symbol_info$Profile[i] <- find_value("profile\\.description", json_data)
+        symbol_info$Website[i] <- find_value("profile\\.website", json_data)
+        symbol_info$`Fund Type`[i] <- find_value("fundType", json_data)
+        symbol_info$`Inception Date`[i] <- find_value("inceptionDate", json_data)
+        symbol_info$Currency[i] <- find_value("issuedCurrency", json_data)
+        
+        # clean up workspace
+        rm(url, json_data, find_value)
+    }
+    
+    # save to local folder
+    write_csv(symbol_info, "./Datasets/symbol_info.csv")
+    rm(i, symbol_info)
+}
+
+symbol_info <- read_csv("./Datasets/symbol_info.csv")
+
+# fill in missing values for Fund Type column
+for(i in which(is.na(symbol_info$`Fund Type`))) {
+    symbol_info$`Fund Type`[i] <- if(str_detect(tolower(symbol_info$Profile[i]), "trust")) {
+        "Unit Trust"
+    } else {
+        NA
+    }
+}
+rm(i, all_symbols)
+
+```
+
+#### Complete UITF List
+
+All these additional data are gathered to screen out all non-UITF symbols from our list and also for mapping them to their fund and risk classifications later. You can view our clean data below.
+
+```{r warning=FALSE, message=FALSE}
+
+# filter in UITFs only
+all_UITFs <- symbol_info %>% 
+    filter(`Fund Type` == "Unit Trust") %>% 
+    mutate(Website = str_replace(Website, "http:", "")) %>% 
+    mutate(Website = str_replace_all(Website, "/", ""))
+
+# fill in missing values for Website column
+all_UITFs$Website[is.na(all_UITFs$Website) & str_detect(all_UITFs$Profile, "Rizal")] <- "www.rcbc.com"
+
+# manually define bank-website mapping ala dictionary
+bank_websites <- list(`AB Capital` = "www.abcapitalonline.com",
+                      ATRAM = "www.atram.com.ph",
+                      `Asia United Bank` = "www.aub.com.ph",
+                      `Bank of Commerce` = "www.bankcom.com.ph",
+                      BDO = "www.bdo.com.ph",
+                      BPI = "www.bpiexpressonline.com",
+                      `China Bank` = "www.chinabank.ph",
+                      EastWest = "www.eastwestbanker.com",
+                      MetroBank = "www.metrobank.com.ph",
+                      PBCOM = "www.pbcom.com.ph",
+                      PNB = "www.pnb.com.ph",
+                      RCBC = "www.rcbc.com",
+                      `Security Bank` = "www.securitybank.com.ph",
+                      UCPB = "www.ucpb.com",
+                      `Union Bank` = "www.unionbankph.com") %>% 
+    data_frame(Bank = names(.), Website = .) %>% 
+    mutate(Website = as.character(Website))
+
+# clean fund name function
+clean_fund_name <- function(fund_name) {
+    fund_name %>% 
+    str_split(" ") %>% 
         unlist() %>% 
         map_chr(
             function(x){
                 ifelse(
-                    str_detect(string = uitf_df$Bank[i], pattern = x),
+                    x %in% c("AB", "ATRAM", "AUB", "U.S.", "US", "ABF", "CBC", "GS", "II", "III", "PNB", "SB", "UCPB", "US$", "PSEI", "PSEi", "BDO", "BPI", "CTBC", "RCBC", "BOC"),
                     x, capitalize(tolower(x))
                 )
             }
         ) %>% 
-        paste(collapse = " ")
+        paste(collapse = " ") %>% 
+        str_trim()
 }
 
-# show a snippet of our data frame
-paged_table(uitf_df[1:9, c(1,2,3,5)])
+# merge bank info
+all_UITFs <- all_UITFs %>% 
+    left_join(bank_websites) %>% 
+    select(Symbol, Name, Bank, Currency, `Inception Date`) %>% 
+    mutate(Name = map_chr(Name, clean_fund_name)) %>% 
+    unique()
+
+# clean up
+rm(bank_websites, symbol_info)
+
+paged_table(head(all_UITFs, n = 3))
 
 ```
 <br />
 
-### Bloomberg Ticker Symbols
 
-#### Bloomberg Symbol Lookup
+### Raw Data: **Daily Price Data**
 
-Our second dataset is a mapping of Bloomberg ticker symbols to our list of UITFs. This is a requirement for scraping daily price data later. For this, we're using Bloomberg's Symbol Lookup because it can be queried easily using urls in this format: `www.bloomberg.com/markets/symbolsearch?query=` + `<search string>`
-
-#### Extracting Ticker Symbols thru Google Search
-
-There aren't many sites offering daily prices of all UITFs in our list. Bank websites show data for their products only of course and parsing each individual site is inefficient. **uitf.com** has all the data we need but is unscrapable because it requires you to answer a captcha first.  
-
-So we're going to pull daily price data from [bloomberg.com](https://www.bloomberg.com/) through a clever hack. But first we need to know the ticker symbols used for each UITF in bloomberg. There's no readily available data for this so we'll have to rely on Google's intelligence for this one.
-<br /><br />
-
-#### Our custom Google query function
-
-This function queries *Google Search* and returns the ticker symbol we need. All we need to do is pass it a string which will be used for our google search. The string follows this format: `www.bloomberg.com/quote` + `<bank name>` + `<UITF name>`. Expand the code chunk below to see the function code.
-
-```{r message=FALSE, warning=FALSE}
-
-search_bloomberg_symbol <- function(search_string) {
-    
-    # query google search and parse html document
-    html <- getForm("http://www.google.com.ph/search", hl="en", lr="", q=search_string, btnG="Search") %>%
-        htmlTreeParse()
-    
-    # descend through html hierarchy to narrow down our search
-    html_flat <- html$children$html[2]$body[2]$table[4]$tbody[2]$tr[2]$td[1]$div[2]$div[2]$div[1]$div[1]$ol[1]$div %>% unlist()
-    
-    # a little string processing to extract our symbol
-    if(is.null(html_flat)) {
-        symbol <- NA
-    } else {
-        symbol <- data_frame(Name = names(html_flat), Value = html_flat) %>% 
-        filter(str_detect(Name, "\\.text\\.value")) %>% 
-        `[[`(2) %>% 
-        paste(collapse=" ") %>% 
-        str_replace(".*quote", "") %>% 
-        str_replace(":PM.*", "") %>% 
-        str_replace_all("/", "") %>% 
-        str_trim() %>% 
-        str_split(pattern = " ") %>% 
-        unlist() %>% 
-        paste(collapse = "")
-    }
-
-    return(symbol)
-}
-
-```
-
-#### Querying Google Search
-
-We use our custom function above to extract ticker symbols from google search results for each UITF. Using this method, not all UITFs were correctly matched to their symbols. It is very likely that these UITFs do not have data hosted on [bloomberg.com](http://www.bloomberg.com) so we just have to exclude them from our analysis.
-
-```{r message=FALSE, warning=FALSE}
-
-if(!file.exists("./Datasets/uitf_symbols.csv")) {
-    
-    # prepare search strings for each UITF
-    uitf_symbols <- uitf_df %>% 
-    select(Bank, `Fund Name`) %>%
-    mutate(search_string = paste("www.bloomberg.com/quote", `Fund Name`)) %>% 
-    mutate(Symbol = NA)
-    
-    # query symbols for all UITFs
-    for(i in 97:nrow(uitf_symbols)) {
-        message(i)
-        search_string <- uitf_symbols$search_string[i]
-        uitf_symbols$Symbol[i] <- search_bloomberg_symbol(search_string)
-        message(paste0(i, " out of ", nrow(uitf_symbols)))
-    }
-    
-    # save to local folder then cleanup memory
-    write_csv(uitf_symbols, "Datasets/uitf_symbols.csv")
-}
-
-# reload symbol table and remove erroneous symbols
-uitf_symbols <- read_csv("Datasets/uitf_symbols.csv") %>% 
-    select(Bank, `Fund Name`, Symbol) %>% 
-    mutate(Symbol = ifelse(str_length(Symbol) > 7, NA, Symbol)) %>% 
-    mutate(Symbol = ifelse(str_length(Symbol) < 6, NA, Symbol)) %>% 
-    mutate(Symbol = ifelse(!is.na(Symbol), paste(Symbol, "PM", sep=":"), NA))
-    
-# display a portion of the results
-uitf_symbols %>% 
-    distinct(Symbol, .keep_all=TRUE) %>% 
-    sample_n(5) %>% 
-    paged_table()
-
-```
-<br />
-
-#### Data cleaning
-
-Before we pull daily price data, let's make sure to clean up our dataset first. Duplicate symbols are red flags for incorrect symbols.
-
-```{r warning=FALSE}
-
-# look for symbols with duplicates
-duplicate_symbols <- uitf_symbols$Symbol %>% 
-    table() %>% 
-    as_data_frame() %>% 
-    filter(n > 1)
-
-# show duplicate symbols
-print(duplicate_symbols)
-
-```
-
-That's a lot of duplicates. Let's see which UITFs from our list have these symbols matched to them. From this point, we just have to manually check which ones have incorrectly labelled symbols and remove them from out UITF list. It's very likely that bloomberg does not have daily price data for these which is why our google query returned inaccurate results.
-
-```{r warning=FALSE, message=FALSE}
-
-# create duplicates table
-duplicates <- uitf_symbols %>% 
-    filter(Symbol %in% duplicate_symbols[[1]]) %>% 
-    arrange(Symbol)
-
-paged_table(duplicates)
-
-# remove rows with correct labels from our duplicates table
-duplicates <- duplicates[-c(1,5,9,11,13,16,17,20,22,26,29,30,32,34,36,39), ]
-
-# remove duplicates from out uitf_symbols dataframe
-uitf_symbols <- uitf_symbols %>% 
-    anti_join(duplicates) %>% 
-    filter(Symbol != "") %>% 
-    filter(!is.na(Symbol))
-
-# clean up workspace
-rm(duplicates, duplicate_symbols)
-
-```
-<br />
-
-### Daily Price Data
-
-#### Extracting data from Bloomberg.com
-
-Now that we have the ticker symbols for most of the UITFs in our matrix, we can pull daily price data for each one for the past year. We'll get this data from Bloomberg using this simple hack which exposes the raw data used in their graphs. We just have to access their site as follows: `www.bloomberg.com/markets/chart/data/1Y/` + `<ticker symbol>`. This returns the raw data in `JSON` format. See example below for `BPIEQUI:PM`.
+Now that we have a complete list of UITFs, we can pull daily price data for each one for the past year. We'll get this data from Bloomberg using this simple hack which exposes the raw data used in their graphs. We just have to access their site as follows: `www.bloomberg.com/markets/chart/data/1Y/` + `<ticker symbol>`. This returns the raw data in `JSON` format. See example below for `BPIEQUI:PM`.
 
 ```{r message=FALSE, warning=FALSE}
 # parse JSON data and show first 10 elements
@@ -275,17 +286,17 @@ We merge all data for all UITFs in a long data frame and then save to a local fo
 # initialize price data frame
 price_data <- data_frame(Date = as.Date(vector()),
                          NAVPU = double(),
-                         UITF = character())
+                         Symbol = character())
 
 # extract data from web
 if(!file.exists("./Datasets/uitf_daily_prices_raw.csv")) {
-    for(i in 1:nrow(uitf_symbols)) {
+    for(i in 1:nrow(all_UITFs)) {
     
         # progress tracker
-        message(paste0("Extracting data | ", i, " out of ", nrow(uitf_symbols)))
+        print(paste0("Extracting data | ", i, " out of ", nrow(all_UITFs)))
     
         # build url
-        url <- paste0("https://www.bloomberg.com/markets/chart/data/1Y/", uitf_symbols$Symbol[i])
+        url <- paste0("https://www.bloomberg.com/markets/chart/data/1Y/", all_UITFs$Symbol[i])
     
         # download raw JSON data
         json_data <- fromJSON(file= url)[["data_values"]]
@@ -298,7 +309,7 @@ if(!file.exists("./Datasets/uitf_daily_prices_raw.csv")) {
                    dimnames = list(c(), c("Date", "NAVPU"))) %>% 
             as_data_frame()  %>% 
             mutate(Date = as.Date(as.POSIXlt(Date/1000, origin = "1970-01-01"))) %>%
-            mutate(UITF = uitf_symbols$Symbol[i])
+            mutate(Symbol = all_UITFs$Symbol[i])
     
         # merge to price data
         price_data <- bind_rows(price_data, uitf_daily_prices)
@@ -306,7 +317,7 @@ if(!file.exists("./Datasets/uitf_daily_prices_raw.csv")) {
 
     # save data to local folder
     write_csv(price_data, "Datasets/uitf_daily_prices_raw.csv")
-    rm(url, json_data, uitf_daily_prices, price_data, search_bloomberg_symbol)
+    rm(i, url, json_data, uitf_daily_prices, price_data)
 }
 
 # load data
@@ -319,6 +330,193 @@ print(price_data)
 ```
 <br />
 
+
+### Raw Data: **Fund Information**
+
+For our last raw dataset, we'll pull basic information about the available UITFs in the Philippines from [uitf.com](http://www.uitf.com.ph). We'll use the `rvest` package to parse tables in web pages then save it as CSV to our local folder. Take a glimpse at a portion of the data we just extracted.
+
+```{r warning=FALSE, message=FALSE}
+
+# parse and save data in to local folder
+if(!file.exists("./Datasets/fund_info.csv")) {
+    url <- "http://www.uitf.com.ph/print_matrix.php?sort=&sortby=bank&sortorder=asc&class_id=&currency="
+    read_html(url) %>% 
+        html_nodes(xpath='//*[@class="hovertable"]') %>% 
+        html_table() %>% 
+        `[[`(1) %>% 
+        write_csv("Datasets/fund_info.csv")
+}
+
+# manually define bank name mappings ala dictionary
+bank_names <- list(`AB Capital` = "AB Capital",
+                    ATRAM = "ATRAM Trust Corporation",
+                    `Asia United Bank` = "Asia United Bank",
+                    `Bank of Commerce` = "Bank of Commerce",
+                    BDO = "BDO Unibank, Inc.",
+                    BPI = "BPI Asset Management and Trust Corporation",
+                    `China Bank` = "China Banking Corporation",
+                    `CTBC Bank` = "CTBC Bank (Philippines) Corp.",
+                    DBP = "Development Bank of the Philippines",
+                    EastWest = "EastWest Banking Corporation",
+                    LandBank = "LandBank of the Philippines",
+                    MetroBank = "Metropolitan Bank & Trust Co.",
+                    PBCOM = "Philippine Bank of Communications",
+                    `Phil. Business Bank` = "Philippine Business Bank",
+                    PNB = "Philippine National Bank",
+                    PSBank = "Philippine Savings Bank",
+                    `RCBC Savings` = "RCBC Savings",
+                    RCBC = "Rizal Commercial Banking Corporation",
+                    `Robinsons Bank` = "Robinsons Bank",
+                    `Security Bank` = "Security Bank Corporation",
+                   `Sterling Bank of Asia` = "Sterling Bank of Asia",
+                    UCPB = "United Coconut Planters Bank",
+                    `Union Bank` = "Union Bank") %>% 
+    data_frame(Bank = names(.), `Bank Name` = .) %>% 
+    mutate(`Bank Name` = as.character(`Bank Name`))
+
+# load data into memory then clean data
+fund_info <- read_csv("./Datasets/fund_info.csv", col_types = "ccccccnnncccccccn") %>% 
+        mutate(`Inception Date` = mdy(`Inception Date`), `Last Uploaded Date` = mdy(`Last Uploaded Date`)) %>% 
+    mutate(`Fund Name` = str_replace(`Fund Name`, "\\(.*\\)", "")) %>% 
+    select(`Bank Name` = Bank, 
+           `Fund Name`, 
+           `Fund Classification` = Classification,
+           `Risk Classification`,
+           `Inception Date`,
+           Currency,
+           `Min. Initial Participation`,
+           `Min. Additional Participation`,
+           `Min. Holding Period`,
+           `Trust Fee Structure`,
+           `Early Redemption Fee`,
+           Benchmark,
+           `Last Uploaded Date`,
+           `Latest NAVpu`) %>% 
+    left_join(bank_names) %>% 
+    select(Bank, everything(), -`Bank Name`) %>% 
+    mutate(`Fund Classification` = str_replace(`Fund Classification`, "Money - Market", "Money Market")) %>% 
+    mutate(`Fund Name` = map_chr(`Fund Name`, function(x){ clean_fund_name(x) }))
+
+# clean up
+rm(bank_names, i)
+
+# show a snippet of our data frame
+fund_info %>% 
+    select(`Bank`, `Fund Name`, `Fund Classification`, `Risk Classification`, everything()) %>% 
+    head(n = 3) %>% 
+    paged_table()
+
+```
+<br />
+
+
+### Processed Data: **UITF Matrix**
+
+So far we have two tables which have various info on UITFs. First is the *UITF List* which contains all UITF names and their ticker symbols which is our link to our last dataset, the price data. Second is the *Fund Info* table which contains all other relevant information such as fund and risk classifications among others. For our working dataset, we need to merge these two tables together.  
+
+Each table has a fund name for each UITF. However, the fund names are not standard between the two sources, UITF.com and Bloomberg.com. We have lots of other information for each table so we're going to use these cleverly to be able to merge these two tables. Expand the code chunk below to see how this was done.
+
+```{r message=FALSE, warning=FALSE}
+
+# match UITFs with exact same names between tables
+fund_info_labelled <- fund_info %>% 
+    filter(Bank %in% all_UITFs$Bank) %>% 
+    mutate(string_to_match = tolower(`Fund Name`)) %>% 
+    left_join(transmute(all_UITFs, string_to_match = tolower(Name), Symbol = Symbol, `Match Name` = Name)) %>% 
+    select(-string_to_match)
+
+# label UITFs with same bank and inception date
+for(i in which(is.na(fund_info_labelled$Symbol))) {
+    match <- all_UITFs %>% 
+        filter(Bank == fund_info_labelled$Bank[i]) %>% 
+        filter(Currency == fund_info_labelled$Currency[i]) %>% 
+        filter(`Inception Date` == fund_info_labelled$`Inception Date`[i]) %>% 
+        `[`(c("Symbol", "Name"))
+    
+    if(nrow(match) == 1 && !(match$Symbol %in% fund_info_labelled$Symbol)) {
+        fund_info_labelled$Symbol[i] <- match$Symbol
+        fund_info_labelled$`Match Name`[i] <- match$Name
+    }
+    
+    rm(match)
+}
+
+# label UITFs with exact same Bank, currency, and NAVPU at latest date
+temp_price_data <- price_data %>% 
+    left_join(all_UITFs[, c("Symbol", "Name", "Bank", "Currency")]) %>% 
+    unique()
+
+for(i in which(is.na(fund_info_labelled$Symbol))) {
+    
+    ref_price <- fund_info_labelled$`Latest NAVpu`[i]
+    n_digits <- (ref_price - floor(ref_price)) %>% 
+        sprintf("%f", .) %>% 
+        str_replace("0\\.", "") %>% 
+        str_replace("0*$", "") %>% 
+        nchar()
+    
+    match <- temp_price_data %>% 
+        filter(Bank == fund_info_labelled$Bank[i]) %>% 
+        filter(Currency == fund_info_labelled$Currency[i]) %>% 
+        filter(Date == fund_info_labelled$`Last Uploaded Date`[i]) %>% 
+        filter(floor(NAVPU*10^n_digits) == ceiling(ref_price*10^n_digits)) %>% 
+        `[`(c("Symbol", "Name"))
+    
+    if(nrow(match) == 1 && !(match$Symbol %in% fund_info_labelled$Symbol)) {
+        fund_info_labelled$Symbol[i] <- match$Symbol
+        fund_info_labelled$`Match Name`[i] <- match$Name
+    }
+    
+    rm(match, ref_price, n_digits)
+}
+
+# label UITFs with exact same Bank, currency, and approximately the same NAVPU at latest date
+for(i in which(is.na(fund_info_labelled$Symbol))) {
+    
+    ref_price <- fund_info_labelled$`Latest NAVpu`[i]
+    
+    match <- temp_price_data %>% 
+        filter(Bank == fund_info_labelled$Bank[i]) %>% 
+        filter(Currency == fund_info_labelled$Currency[i]) %>% 
+        filter(Date == fund_info_labelled$`Last Uploaded Date`[i]) %>% 
+        mutate(price_error = abs(ref_price - NAVPU)) %>% 
+        filter(price_error < 0.01) %>% 
+        `[`(c("Symbol", "Name", "price_error"))
+    
+    
+    if(nrow(match) >= 1) {
+        if(nrow(match) > 1) {
+            match <- match %>% 
+                arrange(price_error) %>% 
+                slice(1)
+        }
+        
+        if(!(match$Symbol %in% fund_info_labelled$Symbol)) {
+            fund_info_labelled$Symbol[i] <- match$Symbol
+            fund_info_labelled$`Match Name`[i] <- match$Name
+        }
+        
+    }
+    
+    rm(match, ref_price, n_digits)
+}
+
+# select columns
+fund_info_labelled <- fund_info_labelled %>% 
+    select(Symbol, everything(), -Bank, -`Inception Date`, -Currency, -`Last Uploaded Date`, -`Latest NAVpu`, -`Match Name`)
+
+# merge the two tables
+UITF_matrix <- left_join(all_UITFs, fund_info_labelled, by = "Symbol")
+
+# show head of UITF_matrix
+paged_table(head(UITF_matrix, n=3))
+
+```
+<br />
+
+
+### Processed Data: **Daily Percent Returns**
+
 #### Quick look at our data
 
 We can have a quick look at our data using a trend chart. Since the prices are on relatively different scales, this graph does not provide much insight and majority of UITFs are compressed in the lower region of the y-axis. However, this confirms that we have our data in a nice format we can work with later on.
@@ -327,12 +525,12 @@ We can have a quick look at our data using a trend chart. Since the prices are o
 
 # sample 30 UITFs to show in trend chart
 set.seed(10)
-sample_UITFs <- sample(price_data$UITF, 30)
+sample_UITFs <- sample(price_data$Symbol, 30)
 
 # plot trend chart
 plot <- price_data %>%
-    filter(UITF %in% sample_UITFs) %>% 
-    ggplot(aes(x=Date, y=NAVPU, col=UITF, group=UITF, tooltip=UITF)) +
+    filter(Symbol %in% sample_UITFs) %>% 
+    ggplot(aes(x=Date, y=NAVPU, col=Symbol, group=Symbol, tooltip=Symbol)) +
     geom_line_interactive(lwd=1, alpha=0.8) +
     labs(x = "",
          y = "Net Asset Value per Unit",
@@ -353,24 +551,24 @@ To compare these UITFs, the raw daily price data must be converted in terms of p
 
 # get reference prices 1 year before Apr 25, 2017
 first_prices <- price_data %>% 
-    group_by(UITF) %>% 
-    arrange(UITF, Date) %>% 
+    group_by(Symbol) %>% 
+    arrange(Symbol, Date) %>% 
     slice(1) %>% 
-    select(UITF, First_Price = NAVPU)
+    select(Symbol, First_Price = NAVPU)
 
 # calculate %returns
 returns_data <- price_data %>% 
-    group_by(UITF) %>% 
-    arrange(UITF, Date) %>% 
+    group_by(Symbol) %>% 
+    arrange(Symbol, Date) %>% 
     left_join(first_prices) %>% 
     mutate(Return = ((NAVPU/First_Price)-1)*100) %>% 
     ungroup() %>% 
-    select(UITF, Date, Return)
+    select(Symbol, Date, Return)
 
 # plot all UITF trends
 plot <- returns_data %>% 
-    filter(UITF %in% sample_UITFs) %>% 
-    ggplot(aes(x=Date, y=Return, col=UITF, group=UITF, tooltip=UITF)) +
+    filter(Symbol %in% sample_UITFs) %>% 
+    ggplot(aes(x=Date, y=Return, col=Symbol, group=Symbol, tooltip=Symbol)) +
     geom_line_interactive(lwd=1, alpha=0.8) +
     labs(x = "",
          y = "Returns (%)",
@@ -395,7 +593,7 @@ The table below shows all available UITFs per bank. You can filter by bank using
 ```{r warning=FALSE, message=FALSE}
 
 # show interactive list of UITFs using DT
-uitf_df %>% 
+fund_info %>% 
     select(Bank, `Fund Name`) %>% 
     mutate(Bank = as.factor(Bank)) %>% 
     datatable(filter = "bottom", 
@@ -415,10 +613,10 @@ uitf_df %>%
 Plotting the number of different UITF products per bank shows BPI having the largest portfolio with 27 different products followed by BDO with 21 and Metrobank with 17.
 
 ```{r warning=FALSE}
-plot <- uitf_df %>% 
+plot <- fund_info %>% 
     transmute(Bank = paste0(str_sub(Bank, 1, 30), "...")) %>% 
     group_by(Bank) %>% 
-    summarize(Portfolio_Count = n()) %>% 
+    summarise(Portfolio_Count = n()) %>% 
     ungroup() %>% 
     mutate(tooltip = paste(Bank,
                            paste(Portfolio_Count, "products"),
@@ -450,9 +648,9 @@ ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 
 Looking at the dotplot below, we see that BPI was the first to introduce a couple of UITFs in 1994. We also have the largest number of UITF introductions on 2005 from multiple banks and another series of introductions from 2013 to 2016.
 
-```{r warning=FALSE, message=FALSE}
+```{r warning=FALSE, message=FALSE, eval=FALSE}
 # update our uitf matrix with those which we have daily price data only
-uitf_df <- uitf_df %>% 
+fund_info <- fund_info %>% 
     inner_join(uitf_symbols)
 
 # initialize custom categorical colors
@@ -466,11 +664,11 @@ all_qual_colors <- map2(all_qual_palettes$maxcolors,
                             brewer.pal) %>% 
     unlist()
 
-my_qual_colors <- all_qual_colors[1:length(unique(uitf_df$Bank))]
+my_qual_colors <- all_qual_colors[1:length(unique(fund_info$Bank))]
 
 
 # dot plot
-plot <- uitf_df %>% 
+plot <- fund_info %>% 
     select(Bank, `Fund Name`, `Inception Date`) %>% 
     mutate(Year = year(`Inception Date`)) %>% 
     mutate(Bank_full_name = Bank) %>% 
@@ -504,7 +702,7 @@ ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 
 ```{r warning=FALSE}
 
-plot <- uitf_df %>% 
+plot <- fund_info %>% 
     select(Bank, Risk = `Risk Classification`) %>% 
     mutate(Bank = paste0(str_sub(Bank, 1, 30), "...")) %>% 
     mutate(Risk = factor(Risk, levels=c("Aggressive", "Moderate", "Conservative"))) %>% 
@@ -551,8 +749,8 @@ ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 
 Aggressive equity funds track the Philippine Stock Exchange index (PSEi) 100% or in combination with another industry index. Moderate risk UITFs on the other hand are composed of a wider class of funds from balanced funds to bond funds and some money-market funds. Last, conservative funds are mostly money-market funds which are invested in short-term debt securities like treasury bills.
 
-```{r warning=FALSE, message=FALSE}
-plot <- uitf_df %>% 
+```{r warning=FALSE, message=FALSE, eval=FALSE}
+plot <- fund_info %>% 
     select(Risk = `Risk Classification`, Classification) %>% 
     mutate(Risk = factor(Risk, levels=c("Aggressive", "Moderate", "Conservative"))) %>% 
     group_by(Risk) %>% 
@@ -589,7 +787,7 @@ ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 
 In this section we will review which UITFs performed best for the past year. Our key metric is year-over-year returns (YOY) from Apr 26, 2016 to Apr 25, 2017. The table below shows all UITFs and their performance in descending order. Feel free to navigate through each bank and/or each classification.
 
-```{r warning=FALSE, message=FALSE}
+```{r warning=FALSE, message=FALSE, eval=FALSE}
 # custom function for price selection
 get_price <- function(Date, NAVPU, target_date) {
     NAVPU[Date == target_date]
@@ -597,23 +795,23 @@ get_price <- function(Date, NAVPU, target_date) {
 
 # summarize performance of each UITF
 perf_summ <- price_data %>% 
-    group_by(UITF) %>% 
+    group_by(Symbol) %>% 
     # get prices for current date and 1 year ago
     mutate(price_latest = get_price(Date, NAVPU, max(Date))) %>% 
     mutate(price_1Y_ago = get_price(Date, NAVPU, min(Date))) %>% 
     filter(Date >= ymd("2017-01-01")) %>% 
     # get prices at start of 2017
     mutate(price_startOfYear = get_price(Date, NAVPU, min(Date))) %>% 
-    select(UITF, starts_with("price_")) %>% 
+    select(Symbol, starts_with("price_")) %>% 
     ungroup() %>% 
     unique() %>% 
     # calculate YTD and YOY returns
     mutate(YTD = 100*(price_latest/price_startOfYear - 1)) %>% 
     mutate(YOY = 100*(price_latest/price_1Y_ago - 1)) %>% 
-    select(Symbol = UITF, YTD, YOY) %>% 
+    select(Symbol = Symbol, YTD, YOY) %>% 
     arrange(desc(YTD)) %>% 
     # merge UITF info
-    inner_join(uitf_df[, c("Symbol", "Bank", "Fund Name", "Classification", "Risk Classification")])
+    inner_join(fund_info[, c("Symbol", "Bank", "Fund Name", "Classification", "Risk Classification")])
 
 # prepare output table
 top_uitfs <- perf_summ %>% 
@@ -646,7 +844,7 @@ datatable(top_uitfs,
 
 ### ROI
 
-```{r warning=FALSE, message=FALSE}
+```{r warning=FALSE, message=FALSE, eval=FALSE}
 
 plot <- price_data %>% 
     group_by(UITF) %>% 
@@ -657,7 +855,7 @@ plot <- price_data %>%
     spread(Price_Date, NAVPU) %>% 
     mutate(YOY = 100*(New/Old - 1)) %>% 
     arrange(desc(YOY)) %>% 
-    inner_join(uitf_df[, c("Symbol", "Bank", "Fund Name", "Classification", "Risk Classification")], by = c("UITF" = "Symbol")) %>% 
+    inner_join(fund_info[, c("Symbol", "Bank", "Fund Name", "Classification", "Risk Classification")], by = c("UITF" = "Symbol")) %>% 
     ggplot(aes(x = Classification, y = YOY, fill = Classification, col = Classification)) +
     geom_violin(width = 1.5) +
     geom_boxplot_interactive(col = "black", fill = "white", width = 0.07, alpha = 0.5) +
