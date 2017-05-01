@@ -269,15 +269,6 @@ paged_table(head(all_UITFs, n = 3))
 ### Raw Data: **Daily Price Data**
 
 Now that we have a complete list of UITFs, we can pull daily price data for each one for the past year. We'll get this data from Bloomberg using this simple hack which exposes the raw data used in their graphs. We just have to access their site as follows: `www.bloomberg.com/markets/chart/data/1Y/` + `<ticker symbol>`. This returns the raw data in `JSON` format. See example below for `BPIEQUI:PM`.
-
-```{r message=FALSE, warning=FALSE}
-# parse JSON data and show first 10 elements
-fromJSON(file = "https://www.bloomberg.com/markets/chart/data/1Y/BPIEQUI:PM") %>%
-    `[[`("data_values") %>%
-    `[`(1:10) %>%
-    list("data_values" = .) %>%
-    toJSON()
-```
 <br />
 
 We merge all data for all UITFs in a long data frame and then save to a local folder again. At this point we're more concerned with collecting data first so this format ensures we don't lose any data during collection. Later on we will reshape this data frame as needed in our subsequent analyses.
@@ -321,7 +312,8 @@ if(!file.exists("./Datasets/uitf_daily_prices_raw.csv")) {
 }
 
 # load data
-price_data <- read_csv("./Datasets/uitf_daily_prices_raw.csv")
+price_data <- read_csv("./Datasets/uitf_daily_prices_raw.csv") %>% 
+    unique()
 
 # show some data
 print(price_data)
@@ -398,7 +390,7 @@ fund_info <- read_csv("./Datasets/fund_info.csv", col_types = "ccccccnnncccccccn
     mutate(`Fund Name` = map_chr(`Fund Name`, function(x){ clean_fund_name(x) }))
 
 # clean up
-rm(bank_names, i)
+rm(bank_names, i, clean_fund_name)
 
 # show a snippet of our data frame
 fund_info %>% 
@@ -506,7 +498,14 @@ fund_info_labelled <- fund_info_labelled %>%
     select(Symbol, everything(), -Bank, -`Inception Date`, -Currency, -`Last Uploaded Date`, -`Latest NAVpu`, -`Match Name`)
 
 # merge the two tables
-UITF_matrix <- left_join(all_UITFs, fund_info_labelled, by = "Symbol")
+UITF_matrix <- left_join(all_UITFs, fund_info_labelled, by = "Symbol") %>% 
+    mutate(`Risk Classification` = map_chr(`Risk Classification`, function(x){ ifelse(is.na(x), "Unknown", x) })) %>% 
+    mutate(`Risk Classification` = factor(`Risk Classification`, levels=c("Aggressive", "Moderate", "Conservative"))) %>% 
+    filter(!is.na(`Risk Classification`))
+
+
+# clean up workspace
+rm(fund_info_labelled, temp_price_data, i)
 
 # show head of UITF_matrix
 paged_table(head(UITF_matrix, n=3))
@@ -576,6 +575,9 @@ plot <- returns_data %>%
     theme(legend.position = "none",
           plot.title = element_text(hjust = 0.5))
 
+# clean up workspace
+rm(sample_UITFs, first_prices)
+
 ggiraph(ggobj=plot, height_svg=5, width_svg=9, width=1, tooltip_opacity=0.8)
 
 ```
@@ -584,100 +586,102 @@ ggiraph(ggobj=plot, height_svg=5, width_svg=9, width=1, tooltip_opacity=0.8)
 
 
 
-# Overview of UITFs
+# Overview of Funds
 
-### Available UITFs
+### Bank Portfolios
 
-The table below shows all available UITFs per bank. You can filter by bank using the search box below the table.
+Overall, there are `r nrow(UITF_matrix)` active UITFs in the Philippines. The graph below shows BPI having the largest portfolio with `r sum(UITF_matrix$Bank == "BPI")` different products followed by Security Bank with `r sum(UITF_matrix$Bank == "Security Bank")` and BDO with `r sum(UITF_matrix$Bank == "BDO")`.
+
+```{r warning=FALSE}
+
+plot_data <- UITF_matrix %>% 
+    select(Bank, Currency) %>% 
+    group_by(Bank) %>% 
+    mutate(Total = n()) %>% 
+    ungroup() %>% 
+    group_by(Bank, Currency) %>% 
+    mutate(tooltip = paste(Bank,
+                           paste(n(), "out of", Total , "products"),
+                           sep = "\n")) %>% 
+    ungroup() %>% 
+    mutate(Currency = factor(Currency, levels = c("USD", "PHP")))
+
+plot <- plot_data %>% 
+    ggplot(aes(x = reorder(Bank, desc(Total)), fill = Currency)) +
+    geom_bar_interactive(aes(tooltip = paste(..count.., "products"))) +
+    geom_text(data = unique(plot_data),
+              aes(label = Total, y = Total),
+              nudge_y = 1.5, alpha=0.8) +
+    theme(plot.title = element_text(hjust = 0.5, size = 12),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.x = element_text(hjust=1, vjust=0.5, angle=90),
+          axis.ticks.x = element_blank(),
+          panel.grid = element_blank(),
+          panel.background = element_blank(),
+          legend.position = c(0.85, 0.85),
+          legend.direction = "horizontal"
+    ) +
+    labs(title = "Portfolio Size per Bank",
+         x = "",
+         y = "") +
+    scale_fill_manual(values = c("forestgreen", "cornflowerblue"))
+    
+ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
+
+```
+<br />
+
+A complete list of UITFs can be browsed using the interactive table below.
+```{r message=FALSE, warning=FALSE}
+
+UITF_matrix %>% 
+    select(Bank, Name, Currency) %>% 
+    mutate(Bank = as.factor(Bank)) %>% 
+    mutate(Currency = as.factor(Currency)) %>% 
+    arrange(Bank, Name) %>% 
+    datatable(filter = "top", 
+              class = 'stripe',
+              options = list(dom = "pt",
+                             pagelength = 20,
+                             autoWidth = TRUE
+                             )
+              )
+
+```
+<br />
+
+
+### Timeline
+
+Looking at the dotplot below, we see that BPI was the first to introduce a couple of UITFs in 1994. 2005 has seen the largest number of UITF introductions from multiple banks and another series of introductions are seen from 2013 to 2017
 
 ```{r warning=FALSE, message=FALSE}
 
-# show interactive list of UITFs using DT
-fund_info %>% 
-    select(Bank, `Fund Name`) %>% 
-    mutate(Bank = as.factor(Bank)) %>% 
-    datatable(filter = "bottom", 
-              class = 'stripe',
-              options = list(dom = "lpt",
-                             pageLength = 5,
-                             lengthMenu = c(5, 10, 15, 20),
-                             autoWidth = FALSE
-                        )
-             )    
-
-```
-<br />
-
-#### BPI has the widest array of UITF products among banks in PH
-
-Plotting the number of different UITF products per bank shows BPI having the largest portfolio with 27 different products followed by BDO with 21 and Metrobank with 17.
-
-```{r warning=FALSE}
-plot <- fund_info %>% 
-    transmute(Bank = paste0(str_sub(Bank, 1, 30), "...")) %>% 
-    group_by(Bank) %>% 
-    summarise(Portfolio_Count = n()) %>% 
-    ungroup() %>% 
-    mutate(tooltip = paste(Bank,
-                           paste(Portfolio_Count, "products"),
-                           sep = "\n")) %>% 
-    ggplot(aes(x=reorder(Bank, desc(Portfolio_Count)), 
-               y=Portfolio_Count, 
-               tooltip = tooltip,
-               label = Portfolio_Count)) +
-    geom_bar_interactive(stat = "identity", fill = "grey30", width = 0.95) +
-    geom_text(nudge_y = 1.5, alpha=0.8) +
-    theme(plot.title = element_text(hjust = 0.5, size = 12),
-          axis.title.y = element_text(size = 9),
-          axis.text.y = element_blank(),
-          axis.ticks.y = element_blank(),
-          axis.text.x = element_text(size = 8, hjust=1, angle=90),
-          panel.grid = element_blank(),
-          panel.background = element_blank()
-    ) + 
-    labs(title = "Portfolio Size per Bank",
-         x = "",
-         y = "")
-
-ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
-```
-<br />
-
-
-### Timeline of UITF Inceptions
-
-Looking at the dotplot below, we see that BPI was the first to introduce a couple of UITFs in 1994. We also have the largest number of UITF introductions on 2005 from multiple banks and another series of introductions from 2013 to 2016.
-
-```{r warning=FALSE, message=FALSE, eval=FALSE}
-# update our uitf matrix with those which we have daily price data only
-fund_info <- fund_info %>% 
-    inner_join(uitf_symbols)
-
 # initialize custom categorical colors
-all_qual_palettes <- brewer.pal.info %>% 
-    mutate(Palette = rownames(.)) %>% 
-    filter(category == "qual") %>% 
-    select(Palette, maxcolors)
+my_qual_palette <- function(n) {
+    all_qual_palettes <- brewer.pal.info %>% 
+        mutate(Palette = rownames(.)) %>% 
+        filter(category == "qual") %>% 
+        select(Palette, maxcolors)
 
-all_qual_colors <- map2(all_qual_palettes$maxcolors,
-                            all_qual_palettes$Palette,
-                            brewer.pal) %>% 
-    unlist()
-
-my_qual_colors <- all_qual_colors[1:length(unique(fund_info$Bank))]
-
+    map2(all_qual_palettes$maxcolors,
+                                all_qual_palettes$Palette,
+                                brewer.pal) %>% 
+        unlist() %>% 
+        `[`(c(1:n))
+}
 
 # dot plot
-plot <- fund_info %>% 
-    select(Bank, `Fund Name`, `Inception Date`) %>% 
+plot <- UITF_matrix %>% 
+    select(Bank, Name, `Inception Date`) %>% 
     mutate(Year = year(`Inception Date`)) %>% 
     mutate(Bank_full_name = Bank) %>% 
-    mutate(Bank = paste0(str_sub(Bank, start=1, end=20), "...")) %>% 
     mutate(tooltip = paste(paste0("Bank:\t", Bank_full_name), 
-                           paste0("Fund Name:\t", `Fund Name`), 
+                           paste0("Fund Name:\t", Name), 
                            paste0("Birthday:\t", `Inception Date`), 
                            sep="\n")) %>% 
-    arrange(Bank, `Fund Name`) %>% 
+    arrange(Bank, Name) %>% 
     group_by(Year) %>%
     mutate(Rank = 1:n()) %>% 
     mutate(Rank = Rank - mean(Rank)) %>% 
@@ -690,27 +694,29 @@ plot <- fund_info %>%
     theme(legend.text = element_text(size = 9),
           legend.key.size = unit(5, "mm"),
           plot.title = element_text(hjust = 0.5),
-          axis.text.x = element_text(vjust = 0.5, angle = 0)) +
-    scale_fill_manual(values = my_qual_colors) +
-    scale_color_manual(values = my_qual_colors)
+          axis.text.x = element_text(vjust = 0.5, angle = 0),
+          legend.position = "right") +
+    scale_fill_manual(values = my_qual_palette(length(unique(UITF_matrix$Bank)))) +
+    scale_color_manual(values = my_qual_palette(length(unique(UITF_matrix$Bank))))
 
 ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 ```
 <br />
 
-### Top banks offer a mix of moderate risk and aggressive types of UITFs
+### Risk Types
+
+#### Top banks offer a mix of moderate risk and aggressive types of UITFs
 
 ```{r warning=FALSE}
 
-plot <- fund_info %>% 
+plot <- UITF_matrix %>% 
     select(Bank, Risk = `Risk Classification`) %>% 
-    mutate(Bank = paste0(str_sub(Bank, 1, 30), "...")) %>% 
-    mutate(Risk = factor(Risk, levels=c("Aggressive", "Moderate", "Conservative"))) %>% 
     group_by(Bank, Risk) %>% 
     mutate(Count = n()) %>% 
+    unique() %>%
     ungroup() %>% 
-    group_by(Bank) %>%
-    mutate(Total = n()) %>% 
+    group_by(Bank) %>% 
+    mutate(Total = sum(Count)) %>% 
     mutate(Ratio = Count/Total) %>% 
     ungroup() %>% 
     distinct() %>% 
@@ -718,7 +724,7 @@ plot <- fund_info %>%
                            paste0("Risk: ", Risk),
                            paste0(Count, " out of ", Total, " products"),
                            sep="\n")) %>% 
-    ggplot(aes(x=reorder(Bank, desc(Count)), y = Ratio, 
+    ggplot(aes(x=reorder(Bank, desc(Total)), y = Ratio, 
                fill=Risk, tooltip=tooltip)) +
     geom_bar_interactive(stat = "identity", position = "fill", width = 0.95, alpha=0.8) +
     theme(plot.title = element_text(hjust = 0.5, size = 12),
@@ -726,33 +732,32 @@ plot <- fund_info %>%
           axis.text.y = element_blank(),
           axis.ticks.y = element_blank(),
           axis.title.x = element_text(size = 9),
-          axis.text.x = element_text(size = 8, hjust=1, vjust=0.5, angle=90),
+          axis.text.x = element_text(size = 9, hjust=1, vjust=0.5, angle=90),
           axis.ticks.x = element_blank(),
           panel.grid = element_blank(),
           panel.background = element_blank(),
-          legend.text = element_text(size = 8),
-          legend.position = "top"
+          legend.text = element_text(size = 9),
+          legend.position = "right"
     ) + 
     labs(title = " Portfolio Risk Ratio per Bank",
          x = "Bank") +
-    scale_y_continuous(labels = scales::percent, expand=c(0,0)) +
+    scale_y_continuous(labels = scales::percent, expand=c(0,0.01)) +
     scale_x_discrete(expand=c(0,0)) +
     scale_fill_brewer(type="seq", palette = "Set1")
 
 
-ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
+ggiraph(ggobj = plot, height_svg=6, width_svg = 9, width = 1)
 ```
 <br />
 
 
-### Aggressive UITFs are mostly comprised of equity-tracking funds
+#### Aggressive UITFs are mostly comprised of equity-tracking funds
 
 Aggressive equity funds track the Philippine Stock Exchange index (PSEi) 100% or in combination with another industry index. Moderate risk UITFs on the other hand are composed of a wider class of funds from balanced funds to bond funds and some money-market funds. Last, conservative funds are mostly money-market funds which are invested in short-term debt securities like treasury bills.
 
-```{r warning=FALSE, message=FALSE, eval=FALSE}
-plot <- fund_info %>% 
-    select(Risk = `Risk Classification`, Classification) %>% 
-    mutate(Risk = factor(Risk, levels=c("Aggressive", "Moderate", "Conservative"))) %>% 
+```{r warning=FALSE, message=FALSE}
+plot <- UITF_matrix %>% 
+    select(Risk = `Risk Classification`, Classification = `Fund Classification`) %>% 
     group_by(Risk) %>% 
     mutate(Count = n()) %>% 
     ungroup() %>% 
@@ -778,8 +783,6 @@ plot <- fund_info %>%
 ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 ```
 <br />
-<br />
-<br />
 
 # Performance Analysis
 
@@ -787,49 +790,48 @@ ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
 
 In this section we will review which UITFs performed best for the past year. Our key metric is year-over-year returns (YOY) from Apr 26, 2016 to Apr 25, 2017. The table below shows all UITFs and their performance in descending order. Feel free to navigate through each bank and/or each classification.
 
-```{r warning=FALSE, message=FALSE, eval=FALSE}
-# custom function for price selection
-get_price <- function(Date, NAVPU, target_date) {
-    NAVPU[Date == target_date]
+```{r warning=FALSE, message=FALSE}
+
+# get returns function
+get_returns <- function(symbol, price_df, YTD) {
+    
+    if(YTD == TRUE) {
+        price_df <- price_df %>% 
+            filter(year(Date) == max(year(Date)))
+    }
+    
+    first_price <- price_df %>% 
+        filter(Symbol == symbol) %>% 
+        filter(Date == min(Date)) %>% 
+        `[[`("NAVPU")
+    
+    current_price <- price_df %>% 
+        filter(Symbol == symbol) %>% 
+        filter(Date == max(Date)) %>% 
+        `[[`("NAVPU")
+    
+    (current_price/first_price - 1) * 100
 }
 
 # summarize performance of each UITF
-perf_summ <- price_data %>% 
-    group_by(Symbol) %>% 
-    # get prices for current date and 1 year ago
-    mutate(price_latest = get_price(Date, NAVPU, max(Date))) %>% 
-    mutate(price_1Y_ago = get_price(Date, NAVPU, min(Date))) %>% 
-    filter(Date >= ymd("2017-01-01")) %>% 
-    # get prices at start of 2017
-    mutate(price_startOfYear = get_price(Date, NAVPU, min(Date))) %>% 
-    select(Symbol, starts_with("price_")) %>% 
-    ungroup() %>% 
-    unique() %>% 
-    # calculate YTD and YOY returns
-    mutate(YTD = 100*(price_latest/price_startOfYear - 1)) %>% 
-    mutate(YOY = 100*(price_latest/price_1Y_ago - 1)) %>% 
-    select(Symbol = Symbol, YTD, YOY) %>% 
-    arrange(desc(YTD)) %>% 
-    # merge UITF info
-    inner_join(fund_info[, c("Symbol", "Bank", "Fund Name", "Classification", "Risk Classification")])
-
-# prepare output table
-top_uitfs <- perf_summ %>% 
+fund_performance <- UITF_matrix %>% 
+    mutate(YOY = map_dbl(Symbol, get_returns, price_data, FALSE)) %>% 
+    mutate(YTD = map_dbl(Symbol, get_returns, price_data, TRUE))
+    
+# display interactive table
+fund_performance %>% 
     arrange(desc(YOY)) %>% 
     mutate(YOY = round(YOY, digits = 2),
            YTD = round(YTD, digits = 2)) %>% 
-    select(Bank, Symbol, Classification, YOY, YTD) %>% 
-    mutate(Bank = factor(Bank), Classification = factor(Classification))
-
-# display interactive data table
-datatable(top_uitfs, 
-          filter = "top", 
-          class = 'stripe',
-          options = list(dom = "pt",
-                         pagelength = 20,
-                         autoWidth = TRUE
-                         )
-          )    
+    select(Bank, Symbol, Classification = `Fund Classification`, YOY, YTD) %>% 
+    mutate(Bank = factor(Bank), Classification = factor(Classification)) %>% 
+    datatable(filter = "top", 
+              class = 'stripe',
+              options = list(dom = "pt",
+                             pagelength = 20,
+                             autoWidth = TRUE
+                             )
+              )    
     
 ```
 <br />
