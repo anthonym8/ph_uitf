@@ -1,5 +1,5 @@
 ---
-title: "Analysis of UITFs in PH using R"
+title: "Analyzing UITFs in the Philippines using R"
 author: "Rey Anthony Masilang"
 output:
   html_document:
@@ -241,7 +241,7 @@ clean_fund_name <- function(fund_name) {
         map_chr(
             function(x){
                 ifelse(
-                    x %in% c("AB", "ATRAM", "AUB", "U.S.", "US", "ABF", "CBC", "GS", "II", "III", "PNB", "SB", "UCPB", "US$", "PSEI", "PSEi", "BDO", "BPI", "CTBC", "RCBC", "BOC", "UBP"),
+                    x %in% c("AB", "ATRAM", "AUB", "U.S.", "US", "ABF", "CBC", "GS", "II", "III", "PNB", "SB", "UCPB", "US$", "PSEI", "PSEi", "BDO", "BPI", "CTBC", "RCBC", "BOC", "UBP", "UITF"),
                     x, capitalize(tolower(x))
                 )
             }
@@ -586,11 +586,66 @@ ggiraph(ggobj=plot, height_svg=5, width_svg=9, width=1, tooltip_opacity=0.8)
 
 
 
-# Overview of Funds
+# Exploring UITFs
+
+### Timeline
+
+The first UITFs in the country were established in 1994 by BPI. Interestingly, year 2005 has seen the largest number of UITF introductions from multiple banks followed by a number of product launches for the next two years. Each year since 2013 then, the number of UITFs in the country is slowly but constantly growing through numerous fund introductions. 
+
+```{r warning=FALSE, message=FALSE}
+
+# initialize custom categorical colors
+my_qual_palette <- function(n) {
+    all_qual_palettes <- brewer.pal.info %>% 
+        mutate(Palette = rownames(.)) %>% 
+        filter(category == "qual") %>% 
+        select(Palette, maxcolors)
+
+    map2(all_qual_palettes$maxcolors,
+                                all_qual_palettes$Palette,
+                                brewer.pal) %>% 
+        unlist() %>% 
+        `[`(c(1:n))
+}
+
+# dot plot
+plot <- UITF_matrix %>% 
+    select(Bank, Name, `Inception Date`) %>% 
+    mutate(Year = year(`Inception Date`)) %>% 
+    mutate(Bank_full_name = Bank) %>% 
+    mutate(tooltip = paste(paste0("Name:\t", Name), 
+                           paste0("Bank:\t", Bank_full_name), 
+                           paste0("Inception Date:\t", `Inception Date`), 
+                           sep="\n")) %>% 
+    arrange(Bank, Name) %>% 
+    group_by(Year) %>%
+    mutate(Rank = 1:n()) %>% 
+    mutate(Rank = Rank - mean(Rank)) %>% 
+    ggplot(aes(x = Year, y = Rank, col = Bank)) +
+    geom_point_interactive(aes(tooltip = tooltip, data_id = 1), size = 3) +
+    coord_cartesian(xlim = c(1994, 2018)) +
+    scale_x_continuous(breaks = seq(1990,2020, by = 2)) +
+    scale_y_continuous(breaks = NULL) +
+    labs(x = "Year", y = "", title = "Timeline of UITF Inceptions") +
+    theme(legend.text = element_text(size = 9),
+          legend.key.size = unit(5, "mm"),
+          legend.position = "right",
+          plot.title = element_text(hjust = 0.5),
+          axis.text.x = element_text(vjust = 0.5, angle = 0),
+          panel.background = element_rect(fill = "grey95")
+          ) +
+    scale_fill_manual(values = my_qual_palette(length(unique(UITF_matrix$Bank)))) +
+    scale_color_manual(values = my_qual_palette(length(unique(UITF_matrix$Bank))))
+
+ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1, 
+        hover_css = "stroke:brown; stroke-width:1pt; fill:red")
+```
+<br />
+
 
 ### Bank Portfolios
 
-Overall, there are `r nrow(UITF_matrix)` active UITFs in the Philippines. The graph below shows BPI having the largest portfolio with `r sum(UITF_matrix$Bank == "BPI")` different products followed by Security Bank with `r sum(UITF_matrix$Bank == "Security Bank")` and BDO with `r sum(UITF_matrix$Bank == "BDO")`.
+Overall, there are `r nrow(UITF_matrix)` active UITFs in the Philippines. The graph below shows BPI having the largest portfolio with `r sum(UITF_matrix$Bank == "BPI")` different products followed by Security Bank with `r sum(UITF_matrix$Bank == "Security Bank")` and BDO with `r sum(UITF_matrix$Bank == "BDO")`. All banks with multiple UITF products have both peso-denominated and U.S. dollar-denominated funds.
 
 ```{r warning=FALSE}
 
@@ -618,68 +673,64 @@ plot <- plot_data %>%
                y = Count,
                fill = Currency, 
                tooltip = tooltip)) +
-    geom_bar_interactive(stat = "identity") +
+    geom_bar_interactive(aes(data_id = "any"), stat = "identity") +
     geom_text(data = unique(plot_data),
               aes(label = Total, y = Total),
-              nudge_y = 1.5, alpha=0.8) +
+              nudge_y = 1.2, alpha=0.8) +
     theme(plot.title = element_text(hjust = 0.5, size = 12),
           axis.text.y = element_blank(),
           axis.ticks.y = element_blank(),
           axis.text.x = element_text(hjust=1, vjust=0.5, angle=90),
           axis.ticks.x = element_blank(),
           panel.grid = element_blank(),
-          panel.background = element_blank(),
+          panel.background = element_rect(fill = "grey98"),
           legend.position = c(0.95, 0.85),
-          legend.direction = "vertical"
+          legend.direction = "vertical",
+          legend.background = element_rect(fill = "grey98")
     ) +
     labs(title = "Portfolio Size per Bank",
          x = "",
          y = "") +
-    scale_fill_manual(values = c("forestgreen", "cornflowerblue"))
+    scale_fill_manual(values = c("forestgreen", "cornflowerblue")) +
+    scale_y_continuous(limits = c(0,24), expand = c(0,0))
     
-ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
+ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1,
+        hover_css = "fill-opacity:0.7")
 
 ```
 <br />
 
-#### Getting started
+### Starting Capital
 
-One known advantage of UITFs is low initial capital, typically as low as P10,000. From our list of UITFs, let's confirm this.
+One known advantage of UITFs is the low initial capital required to start investing. Typically advertised starting capital is P10,000. Looking at our dataset, the median starting capital required is indeed P10,000.  
+
+Looking at the entire range shows a better finding, some UITFs accept lower starting capitals from P5,000 down to P1,000. This means some UITFs are more affordable than the typical notion. On the other side of the spectrum are a couple of funds with minimum starting capital of a whopping P5,000,000. Looking at the individual profiles of these funds online shows that these funds are intended for corporate clients which explains the staggering amount.  
+
+Meanwhile, for USD-denominated funds, the typical starting capital required is \$1,000 but can be as low as \$100 and as high as \$5,000 for other funds.
 
 ```{r warning=FALSE, message=FALSE}
-
-# initialize custom categorical colors
-my_qual_palette <- function(n) {
-    all_qual_palettes <- brewer.pal.info %>% 
-        mutate(Palette = rownames(.)) %>% 
-        filter(category == "qual") %>% 
-        select(Palette, maxcolors)
-
-    map2(all_qual_palettes$maxcolors,
-                                all_qual_palettes$Palette,
-                                brewer.pal) %>% 
-        unlist() %>% 
-        `[`(c(1:n))
-}
 
 plot <- UITF_matrix %>% 
     select(Bank, Name, Currency, Initial = `Min. Initial Participation`) %>% 
     arrange(Initial) %>% 
     filter(Initial > 0) %>%
-    filter(Currency == "PHP") %>% 
+    # filter(Currency == "PHP") %>% 
     mutate(Initial_labels = as.factor(formatC(as.integer(Initial), big.mark=","))) %>%
     mutate(Initial_scale = as.integer(Initial_labels)) %>% 
     group_by(Currency, Initial) %>%
     arrange(Bank) %>% 
     mutate(Rank = 1:n()) %>% 
     mutate(tooltip = paste(paste(Name),
-                           paste("Bank", Bank),
+                           paste("Bank:", Bank),
                            paste("Amount:", Currency, Initial_labels),
                            sep = "\n")) %>% 
-    ggplot(aes(y = reorder(Initial_labels, Initial), x = Rank, col = Bank)) +
-    geom_point_interactive(aes(tooltip = tooltip), size = 3.5) +
+    ggplot(aes(y = reorder(Initial_labels, Initial), 
+               x = Rank, col = Bank)) +
+    geom_point_interactive(aes(tooltip = tooltip, data_id = 1), 
+                           size = 3.5) +
+    facet_grid(Currency ~ ., scales = "free_y", space = "free_y", switch = "y") +
     labs(title = "Minimum Initial Participation",
-         y = "Minimum Initial Participation (PHP)") +
+         y = "Amount") +
     theme(legend.position = "right",
           plot.title = element_text(hjust = 0.5),
           axis.title.x = element_blank(),
@@ -691,50 +742,16 @@ plot <- UITF_matrix %>%
     scale_fill_manual(values = my_qual_palette(length(unique(UITF_matrix$Bank)))) +
     scale_color_manual(values = my_qual_palette(length(unique(UITF_matrix$Bank))))
 
-ggiraph(ggobj = plot, height_svg=4.5, width_svg = 9, width = 1)
+ggiraph(ggobj = plot, height_svg=4.2, width_svg = 9, width = 1, 
+        hover_css = "stroke:brown; stroke-width:1pt; fill:red")
 ```
 
 
-#### Timeline
 
-Looking at the dotplot below, we see that BPI was the first to introduce a couple of UITFs in 1994. 2005 has seen the largest number of UITF introductions from multiple banks and another series of introductions are seen from 2013 to 2017
 
-```{r warning=FALSE, message=FALSE}
+### Fund Categories
 
-# dot plot
-plot <- UITF_matrix %>% 
-    select(Bank, Name, `Inception Date`) %>% 
-    mutate(Year = year(`Inception Date`)) %>% 
-    mutate(Bank_full_name = Bank) %>% 
-    mutate(tooltip = paste(paste0("Name:\t", Name), 
-                           paste0("Bank:\t", Bank_full_name), 
-                           paste0("Inception Date:\t", `Inception Date`), 
-                           sep="\n")) %>% 
-    arrange(Bank, Name) %>% 
-    group_by(Year) %>%
-    mutate(Rank = 1:n()) %>% 
-    mutate(Rank = Rank - mean(Rank)) %>% 
-    ggplot(aes(x = Year, y = Rank, col = Bank)) +
-    geom_point_interactive(aes(tooltip = tooltip), size = 3.5) +
-    coord_cartesian(xlim = c(1994, 2018)) +
-    scale_x_continuous(breaks = seq(1990,2020, by = 2)) +
-    scale_y_continuous(breaks = NULL) +
-    labs(x = "Year", y = "", title = "Timeline of UITF Inceptions") +
-    theme(legend.text = element_text(size = 9),
-          legend.key.size = unit(5, "mm"),
-          plot.title = element_text(hjust = 0.5),
-          axis.text.x = element_text(vjust = 0.5, angle = 0),
-          legend.position = "right") +
-    scale_fill_manual(values = my_qual_palette(length(unique(UITF_matrix$Bank)))) +
-    scale_color_manual(values = my_qual_palette(length(unique(UITF_matrix$Bank))))
-
-ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
-```
-<br />
-
-### Risk Types
-
-#### Portfolio Risk Breakdown per Bank
+#### Risk Flavors
 
 Top banks offer a mix of moderate risk and aggressive types of UITFs. BPI offers mostly aggressive-type funds, while the portfolios of both BDO and MetroBank are half aggressive and half moderate types. If you're more inclined to conservative risk types of funds, PNB offers the most number of conservative UITFs.
 
@@ -758,7 +775,8 @@ plot <- UITF_matrix %>%
                y = Count, 
                fill = Risk, 
                tooltip = tooltip)) +
-    geom_bar_interactive(alpha = 0.75, stat = "identity") +
+    geom_bar_interactive(aes(data_id = "just_anything"), 
+                         alpha = 0.85, stat = "identity") +
     theme(plot.title = element_text(hjust = 0.5),
           axis.title = element_blank(),
           axis.text.y = element_blank(),
@@ -766,54 +784,80 @@ plot <- UITF_matrix %>%
           axis.text.x = element_text(hjust=1, vjust=0.5, angle=90),
           axis.ticks.x = element_blank(),
           panel.grid = element_blank(),
-          panel.background = element_blank(),
+          panel.background = element_rect(fill = "grey98"),
           legend.position = c(0.5, 0.85),
-          legend.direction = "horizontal"
+          legend.direction = "horizontal",
+          legend.background = element_rect(fill = "grey98")
     ) +
     ggtitle("Portfolio Risk Breakdown") +
-    scale_fill_brewer(palette = "Set1")
+    scale_fill_brewer(palette = "Set1") +
+    scale_y_continuous(limits = c(0,21), expand = c(0,0))
 
-ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
+ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1,
+        hover_css = "fill-opacity:0.5")
 
 ```
 <br />
 
 
-#### Fund Classification by Income Instruments
+#### Classification by Investment Instruments
 
-There are different income instruments which comprise the portfolio of each UITF product such as shares of stock, bonds, and money markets. The type of income instrument basically determines the risk flavor of a UITF. Equity funds are invested in shares of stocks and are classified as aggressive type. Bond funds are invested in either corporate or government bonds and typically have moderate risk. Balanced funds are invested in a combination of stocks and bonds and are still considered aggressive. Finally, money market funds are invested in short-term debt instruments and are considered as conservative.
+There are different investment instruments in which UITFs are invested in by their respective fund managers. These are either shares of stock, bonds, or money markets. The type of income instrument basically determines the risk attributed to that UITF. The table below summarizes this.
+
+| Category:         | Invested in:                      | Risk Flavor:      |
+|:------------------|:----------------------------------|:------------------|
+| Equity Fund       | Shares of stocks                  | Aggressive        |
+| Bond Fund         | Government and/or corporate bonds | Moderate          |
+| Balanced Fund     | Mix of stocks and bonds           | Aggressive        |
+| Money Market Fund | Short-term debt instruments       | Conservative      |
+
+<br />
+The risk flavors for each fund category above is not fixed. These are the typical labels used by banks when marketing their UITF products. The graph below shows how each fund category is labelled by risk flavor according to banks.
 
 ```{r warning=FALSE, message=FALSE}
 plot <- UITF_matrix %>% 
-    select(Risk = `Risk Classification`, Classification = `Fund Classification`) %>% 
-    group_by(Risk) %>% 
-    mutate(Count = n()) %>% 
+    select(Category = `Fund Classification`, Risk = `Risk Classification`) %>% 
+    mutate(Category = factor(Category, levels = c("Equity Funds",
+                                                  "Balanced Funds",
+                                                  "Long Term Bond Funds",
+                                                  "Medium Term Bond Funds",
+                                                  "Intermediate Term Bond Funds",
+                                                  "Money Market Funds"))) %>% 
+    group_by(Category) %>% 
+    mutate(Total = n()) %>% 
     ungroup() %>% 
-    mutate(tooltip = paste(Classification,
+    group_by(Category, Risk) %>% 
+    mutate(Count = n(), Ratio = n()/Total) %>% 
+    ungroup() %>% 
+    distinct() %>% 
+    mutate(tooltip = paste(Category,
                            paste("Risk:", Risk),
-                           paste(Count, "products"),
+                           paste(Count, "out of", Total, "products"),
                            sep = "\n")) %>% 
-    ggplot(aes(x=reorder(Classification, desc(Count)), 
-               fill=Risk, tooltip = tooltip)) +
-    geom_bar_interactive(alpha = 0.75) +
+    arrange(as.integer(Category), Risk) %>% 
+    ggplot(aes(x = reorder(Category, desc(Category)), y = Ratio, fill = Risk)) +
+    geom_bar_interactive(aes(data_id = "any", tooltip = tooltip),
+                         stat = "identity", alpha = 0.85, position = "stack") +
+    coord_flip() +
     theme(plot.title = element_text(hjust = 0.5, size = 12),
           axis.title.y = element_text(size = 9),
           axis.text.y = element_text(size = 8),
+          axis.ticks.y = element_blank(),
           axis.title.x = element_text(size = 9),
-          axis.text.x = element_text(size = 8, hjust=1, angle=90),
+          axis.text.x = element_blank(),
           axis.ticks.x = element_blank(),
-          legend.position = "none",
-          panel.grid.major.x = element_blank(),
-          panel.grid.minor.x = element_blank()
+          legend.position = "right",
+          panel.grid.major = element_blank(),
+          panel.background = element_blank()
     ) + 
-    facet_grid(. ~ Risk, scales = "free_x", space = "free_x") +
-    labs(title = "UITF breakdown by Risk Flavor and Fund Classification",
-         x = "Classification",
-         y = "Count") +
+    labs(title = "Risk Classifications by Fund Category",
+         x = "Fund Category",
+         y = "Ratio") +
     scale_fill_brewer(palette = "Set1") +
-    scale_y_continuous(limits = c(0,50), breaks = seq(0,50,10))
+    scale_y_continuous(expand = c(0.01,0))
 
-ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
+ggiraph(ggobj = plot, height_svg = 3.5, width_svg = 9, width = 1,
+        hover_css = "fill-opacity:0.65")
 ```
 <br />
 
