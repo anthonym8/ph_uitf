@@ -14,12 +14,7 @@ output:
 knitr::opts_chunk$set(cache=FALSE)
 ```
 
-<!-- # {.tabset .tabset-pills} -->
-
 <br />
-
-
-
 
 # Introduction
 
@@ -49,7 +44,7 @@ This section describes the data gathering and processing steps. You can skip to 
 |  3  | Fund Information          | All other important information including fund and risk classifications, etc. for each UITF |
 
 <br />
-These 3 raw data sets will then be transformed into our pair of working datasets which are:
+These 3 raw data sets will then be transformed into our pair of working data sets which are:
 
 |     | Processed Data            | Description                                   |
 |:---:|:--------------------------|:----------------------------------------------|
@@ -87,7 +82,7 @@ library(RCurl)          # for parsing html
 
 #### Pulling all PH ticker symbols from Bloomberg
 
-For our first dataset, we'll pull a list of all available UITFs from [Bloomberg.com](https://www.bloomberg.com/markets/symbolsearch?). This is done using Bloomberg's symbol lookup tool. We're going to do a basic search for all ticker symbols for all Philippines-based stocks and products. From this set, we'll filter in only those symbols for UITFs, our product of interest.
+For our first data set, we'll pull a list of all available UITFs from [Bloomberg.com](https://www.bloomberg.com/markets/symbolsearch?). This is done using Bloomberg's symbol lookup tool. We're going to do a basic search for all ticker symbols for all Philippines-based stocks and products. From this set, we'll filter in only those symbols for UITFs, our product of interest.
 
 ```{r warning=FALSE, message=FALSE}
 
@@ -127,7 +122,7 @@ paged_table(head(all_symbols, n=3))
 ```
 <br />
 
-We will do a quick filter for just PH open-end fund type symbols. Next is we need to remove other fund types from this dataset such as mutual funds and VULs since we're only interested in UITFs. For this, we need need to gather info from each symbol's quote page from [Bloomberg.com/quote/<ticker symbol>](https://www.bloomberg.com/quote) such as fund profile, inception date, currency, etc. We can access some of the information in this quote page in JSON format using this web address: `https://www.bloomberg.com/markets/api/quote-page/` + `<ticker symbol>`
+We will do a quick filter for just PH open-end fund type symbols. Next is we need to remove other fund types from this data set such as mutual funds and VULs since we're only interested in UITFs. For this, we need need to gather info from each symbol's quote page from [Bloomberg.com/quote/<ticker symbol>](https://www.bloomberg.com/quote) such as fund profile, inception date, currency, etc. We can access some of the information in this quote page in JSON format using this web address: `https://www.bloomberg.com/markets/api/quote-page/` + `<ticker symbol>`
 
 ```{r warning=FALSE, message=FALSE}
 
@@ -325,7 +320,7 @@ print(price_data)
 
 ### Raw Data: **Fund Information**
 
-For our last raw dataset, we'll pull basic information about the available UITFs in the Philippines from [uitf.com](http://www.uitf.com.ph). We'll use the `rvest` package to parse tables in web pages then save it as CSV to our local folder. Take a glimpse at a portion of the data we just extracted.
+For our last raw data set, we'll pull basic information about the available UITFs in the Philippines from [uitf.com](http://www.uitf.com.ph). We'll use the `rvest` package to parse tables in web pages then save it as CSV to our local folder. Take a glimpse at a portion of the data we just extracted.
 
 ```{r warning=FALSE, message=FALSE}
 
@@ -404,7 +399,7 @@ fund_info %>%
 
 ### Processed Data: **UITF Matrix**
 
-So far we have two tables which have various info on UITFs. First is the *UITF List* which contains all UITF names and their ticker symbols which is our link to our last dataset, the price data. Second is the *Fund Info* table which contains all other relevant information such as fund and risk classifications among others. For our working dataset, we need to merge these two tables together.  
+So far we have two tables which have various info on UITFs. First is the *UITF List* which contains all UITF names and their ticker symbols which is our link to our last data set, the price data. Second is the *Fund Info* table which contains all other relevant information such as fund and risk classifications among others. For our working data set, we need to merge these two tables together.  
 
 Each table has a fund name for each UITF. However, the fund names are not standard between the two sources, UITF.com and Bloomberg.com. We have lots of other information for each table so we're going to use these cleverly to be able to merge these two tables. Expand the code chunk below to see how this was done.
 
@@ -596,15 +591,17 @@ The first UITFs in the country were established in 1994 by BPI. Interestingly, y
 
 # initialize custom categorical colors
 my_qual_palette <- function(n) {
-    all_qual_palettes <- brewer.pal.info %>% 
-        mutate(Palette = rownames(.)) %>% 
+    all_qual_palettes <- brewer.pal.info %>%
+        mutate(Palette = rownames(.)) %>%
         filter(category == "qual") %>% 
+        filter(!(Palette %in% c("Set3", "Pastel2", "Pastel1"))) %>%
         select(Palette, maxcolors)
 
     map2(all_qual_palettes$maxcolors,
                                 all_qual_palettes$Palette,
                                 brewer.pal) %>% 
         unlist() %>% 
+        `[`(!str_detect(., "FFFF")) %>%
         `[`(c(1:n))
 }
 
@@ -702,7 +699,7 @@ ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1,
 
 ### Starting Capital
 
-One known advantage of UITFs is the low initial capital required to start investing. Typically advertised starting capital is P10,000. Looking at our dataset, the median starting capital required is indeed P10,000.  
+One known advantage of UITFs is the low initial capital required to start investing. Typically advertised starting capital is P10,000. Looking at our data set, the median starting capital required is indeed P10,000.  
 
 Looking at the entire range shows a better finding, some UITFs accept lower starting capitals from P5,000 down to P1,000. This means some UITFs are more affordable than the typical notion. On the other side of the spectrum are a couple of funds with minimum starting capital of a whopping P5,000,000. Looking at the individual profiles of these funds online shows that these funds are intended for corporate clients which explains the staggering amount.  
 
@@ -714,7 +711,6 @@ plot <- UITF_matrix %>%
     select(Bank, Name, Currency, Initial = `Min. Initial Participation`) %>% 
     arrange(Initial) %>% 
     filter(Initial > 0) %>%
-    # filter(Currency == "PHP") %>% 
     mutate(Initial_labels = as.factor(formatC(as.integer(Initial), big.mark=","))) %>%
     mutate(Initial_scale = as.integer(Initial_labels)) %>% 
     group_by(Currency, Initial) %>%
@@ -745,7 +741,64 @@ plot <- UITF_matrix %>%
 ggiraph(ggobj = plot, height_svg=4.2, width_svg = 9, width = 1, 
         hover_css = "stroke:brown; stroke-width:1pt; fill:red")
 ```
+<br />
 
+
+#### Topping up your investments
+
+Aside from minimum initial participation, each UITF also specifies a minimum additional participation amount. This means that if you wish to add to your investment for a specific UITF, you must do so in chunks not less than this minimum amount. Typically, this minimum additional amount is lower than the initial amount required.
+
+```{r warning=FALSE, message=FALSE}
+plot <- UITF_matrix %>% 
+    select(Symbol, Bank, Name, Currency, 
+           Initial = `Min. Initial Participation`,
+           Additional = `Min. Additional Participation`) %>% 
+    filter(Initial > 0) %>% 
+    mutate(Currency = factor(Currency, levels = c("USD", "PHP"))) %>%
+    mutate(tooltip = paste(Name,
+                           paste("Bank:", Bank),
+                           paste("Initial:", Currency, 
+                                 formatC(as.integer(Initial), 
+                                         big.mark = ",", 
+                                         format = "f",
+                                         digits = 2)),
+                           paste("Additional:", Currency,
+                                 formatC(as.integer(Additional), 
+                                         big.mark = ",",
+                                         format = "f",
+                                         digits = 2)),
+                           sep = "\n")) %>% 
+    gather(amount_type, amount, -Symbol, -Bank, -Name, -Currency, -tooltip) %>% 
+    mutate(amount_labels = as.factor(formatC(as.integer(amount), big.mark=","))) %>%
+    mutate(amount_type = factor(amount_type, levels = c("Initial", "Additional"))) %>% 
+    group_by(amount_labels, amount_type) %>%
+    arrange(Currency) %>% 
+    mutate(x_position = 1:n()) %>% 
+    mutate(x_position = x_position - mean(x_position)) %>%
+    mutate(x_position = x_position/diff(range(x_position))*n()/20) %>% 
+    mutate(x_position = x_position + 10*(as.integer(amount_type)-1)) %>% 
+    ungroup() %>% 
+    ggplot(aes(x = x_position, 
+               y = reorder(amount_labels, amount),
+               col = Currency,
+               data_id = "any")) +
+    geom_point_interactive(aes(tooltip = tooltip), 
+                           size = 3, alpha = 0.5) +
+    geom_line_interactive(aes(group = Symbol, tooltip = tooltip), alpha = 0.5) +
+    labs(x = "Type of Participation",
+         y = "Minimum Amount",
+         title = "Comparison of Initial and Additional Participation Amount") +
+    scale_x_continuous(breaks = c(0,10), labels = c("Initial", "Additional"),
+                       expand = c(0.1,0), minor_breaks = NULL) +
+    theme(plot.title = element_text(hjust = 0.5),
+          panel.background = element_rect(fill = "grey95")) +
+    scale_colour_manual(values = c("forestgreen", "cornflowerblue"))
+
+
+ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1, 
+        hover_css = "stroke:red; stroke-width:2pt; fill:red, fill-opacity:1")
+```
+<br />
 
 
 
@@ -804,39 +857,42 @@ ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1,
 
 There are different investment instruments in which UITFs are invested in by their respective fund managers. These are either shares of stock, bonds, or money markets. The type of income instrument basically determines the risk attributed to that UITF. The table below summarizes this.
 
-| Category:         | Invested in:                      | Risk Flavor:      |
-|:------------------|:----------------------------------|:------------------|
-| Equity Fund       | Shares of stocks                  | Aggressive        |
-| Bond Fund         | Government and/or corporate bonds | Moderate          |
-| Balanced Fund     | Mix of stocks and bonds           | Aggressive        |
-| Money Market Fund | Short-term debt instruments       | Conservative      |
+| Classification:   | Invested in:                      | Risk Flavor:          |
+|:------------------|:----------------------------------|:----------------------|
+| Equity Fund       | Shares of stocks                  | Aggressive            |
+| Bond Fund         | Government and/or corporate bonds | Moderate              |
+| Balanced Fund     | Mix of stocks and bonds           | Aggressive            |
+| Money Market Fund | Short-term debt instruments       | Moderate/Conservative |
 
 <br />
-The risk flavors for each fund category above is not fixed. These are the typical labels used by banks when marketing their UITF products. The graph below shows how each fund category is labelled by risk flavor according to banks.
+The risk flavors for each fund classification above is not fixed. These are the typical labels used by banks when marketing their UITF products. The graph below shows how each fund category is labelled by risk flavor according to banks.
 
 ```{r warning=FALSE, message=FALSE}
 plot <- UITF_matrix %>% 
-    select(Category = `Fund Classification`, Risk = `Risk Classification`) %>% 
-    mutate(Category = factor(Category, levels = c("Equity Funds",
-                                                  "Balanced Funds",
-                                                  "Long Term Bond Funds",
-                                                  "Medium Term Bond Funds",
-                                                  "Intermediate Term Bond Funds",
-                                                  "Money Market Funds"))) %>% 
-    group_by(Category) %>% 
+    select(Classification = `Fund Classification`, 
+           Risk = `Risk Classification`) %>% 
+    mutate(Classification = factor(Classification, 
+                                   levels = c("Equity Funds",
+                                              "Balanced Funds",
+                                              "Long Term Bond Funds",
+                                              "Medium Term Bond Funds",
+                                              "Intermediate Term Bond Funds",
+                                              "Money Market Funds"))) %>% 
+    group_by(Classification) %>% 
     mutate(Total = n()) %>% 
     ungroup() %>% 
-    group_by(Category, Risk) %>% 
+    group_by(Classification, Risk) %>% 
     mutate(Count = n(), Ratio = n()/Total) %>% 
     ungroup() %>% 
-    distinct() %>% 
-    mutate(tooltip = paste(Category,
+    distinct() %>%
+    mutate(tooltip = paste(Classification,
                            paste("Risk:", Risk),
                            paste(Count, "out of", Total, "products"),
                            sep = "\n")) %>% 
-    arrange(as.integer(Category), Risk) %>% 
-    ggplot(aes(x = reorder(Category, desc(Category)), y = Ratio, fill = Risk)) +
-    geom_bar_interactive(aes(data_id = "any", tooltip = tooltip),
+    arrange(as.integer(Classification), Risk) %>% 
+    ggplot(aes(x = reorder(Classification, desc(Classification)), 
+               y = Ratio, fill = Risk)) +
+    geom_bar_interactive(aes(data_id = Risk, tooltip = tooltip),
                          stat = "identity", alpha = 0.85, position = "stack") +
     coord_flip() +
     theme(plot.title = element_text(hjust = 0.5, size = 12),
@@ -850,9 +906,9 @@ plot <- UITF_matrix %>%
           panel.grid.major = element_blank(),
           panel.background = element_blank()
     ) + 
-    labs(title = "Risk Classifications by Fund Category",
-         x = "Fund Category",
-         y = "Ratio") +
+    labs(title = "Risk Flavor by Fund Classification",
+         x = "",
+         y = "Ratio of Labels used by Banks") +
     scale_fill_brewer(palette = "Set1") +
     scale_y_continuous(expand = c(0.01,0))
 
@@ -861,11 +917,12 @@ ggiraph(ggobj = plot, height_svg = 3.5, width_svg = 9, width = 1,
 ```
 <br />
 
+
 # Performance Analysis
 
 ### Top Performing UITFs
 
-In this section we will review which UITFs performed best for the past year. Our key metric is year-over-year returns (YOY) from Apr 26, 2016 to Apr 25, 2017. The table below shows all UITFs and their performance in descending order. Feel free to navigate through each bank and/or each classification.
+In this section we will review which UITFs performed best for the past year. Our key metric is year-over-year returns (YOY) from Apr 26, 2016 to Apr 25, 2017. The graph below shows good returns for equity funds ranging from 5.27% up to 26.79% year-over-year. Balanced funds show medium returns while money market funds have modest returns. Meanwhile, bond funds had a bad year. Intermediate-term and medium-term bond funds generally had little to zero returns while long-term bond funds are generally on the negative side.
 
 ```{r warning=FALSE, message=FALSE}
 
@@ -894,7 +951,367 @@ get_returns <- function(symbol, price_df, YTD) {
 fund_performance <- UITF_matrix %>% 
     mutate(YOY = map_dbl(Symbol, get_returns, price_data, FALSE)) %>% 
     mutate(YTD = map_dbl(Symbol, get_returns, price_data, TRUE))
+
+# display performance of all funds
+plot <- fund_performance %>% 
+    mutate(tooltip = paste(Name,
+                           paste("Symbol:", Symbol),
+                           paste("Bank:", Bank),
+                           paste("Category:", `Fund Classification`),
+                           paste0("YOY Return: ", 
+                                  formatC(YOY, format="f", digits=2), "%"),
+                           paste0("YTD Return: ", 
+                                  formatC(YTD, format="f", digits=2), "%"),
+                           sep = "\n")) %>% 
+    ggplot(aes(x = reorder(Symbol, desc(YOY)), y = YOY, 
+               fill = `Fund Classification`)) +
+    geom_bar_interactive(aes(data_id = Symbol, tooltip = tooltip), 
+                         stat = "identity") +
+    labs(x = "UITF Symbol",
+         y = "1-year return (%)",
+         title = "1-Year Return of All UITFs") +
+    theme(plot.title = element_text(hjust = 0.5),
+          axis.text.x = element_text(size = 7, angle = 90, hjust = 1),
+          axis.ticks.x = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.background = element_rect(fill = "grey95"),
+          legend.position = c(0.85, 0.67),
+          legend.background = element_rect(color = "grey50")) +
+    scale_fill_brewer(palette = "Dark2") +
+    scale_y_continuous(limits = c(-7,28), breaks = seq(-5,25,5))
+
+ggiraph(ggobj = plot, height_svg = 4.5, width_svg = 9, width = 1,
+        hover_css = "fill-opacity:0.65")
+
+```
+<br />
+
+Different date range yields different returns. Another common calculation used is the year-to-date (YTD) return. This calculates the returns with reference to the prices at the start of the year. The graph of YTD returns below shows that almost all funds have positive returns. Still, equity funds had the largest gains followed by balanced funds, bond funds, and money market funds respectively.
+
+```{r}
+
+# display performance of all funds
+plot <- fund_performance %>% 
+    mutate(tooltip = paste(Name,
+                           paste("Symbol:", Symbol),
+                           paste("Bank:", Bank),
+                           paste("Category:", `Fund Classification`),
+                           paste0("YOY Return: ", 
+                                  formatC(YOY, format="f", digits=2), "%"),
+                           paste0("YTD Return: ", 
+                                  formatC(YTD, format="f", digits=2), "%"),
+                           sep = "\n")) %>% 
+    ggplot(aes(x = reorder(Symbol, desc(YTD)), y = YTD, 
+               fill = `Fund Classification`)) +
+    geom_bar_interactive(aes(data_id = Symbol, tooltip = tooltip), 
+                         stat = "identity") +
+    labs(x = "UITF Symbol",
+         y = "YTD return (%)",
+         title = "Year-to-Date Return of All UITFs") +
+    theme(plot.title = element_text(hjust = 0.5),
+          axis.text.x = element_text(size = 7, angle = 90, hjust = 1),
+          axis.ticks.x = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.background = element_rect(fill = "grey95"),
+          legend.position = c(0.85, 0.67),
+          legend.background = element_rect(color = "grey50")) +
+    scale_fill_brewer(palette = "Dark2") +
+    scale_y_continuous(limits = c(-7,28), breaks = seq(-5,25,5))
+
+ggiraph(ggobj = plot, height_svg = 4.5, width_svg = 9, width = 1,
+        hover_css = "fill-opacity:0.65")
+
+```
+<br />
+
+#### Money Market Funds
+
+Chinabank UITFs had the best returns for money market funds, followed by PNB and BDO. Meanwhile, MetroBank money market funds had the lowest gains year-over-year.
+
+```{r warning=FALSE, message=FALSE}
+
+plot <- fund_performance %>% 
+    filter(`Fund Classification` == "Money Market Funds") %>% 
+    mutate(tooltip = paste(Name,
+                           paste("Symbol:", Symbol),
+                           paste("Bank:", Bank),
+                           paste("Category:", `Fund Classification`),
+                           paste0("YOY Return: ", 
+                                  formatC(YOY, format="f", digits=2), "%"),
+                           paste0("YTD Return: ", 
+                                  formatC(YTD, format="f", digits=2), "%"),
+                           sep = "\n")) %>% 
+    arrange(Bank, desc(YOY)) %>% 
+    mutate(order = 1:n()) %>% 
+    ggplot(aes(y = YOY, x = reorder(Symbol, desc(order)), fill = Bank,
+               label = paste0(formatC(YOY, format = "f", digits = 2), "%"),
+               tooltip = tooltip, data_id = Symbol)) +
+    geom_bar_interactive(stat = "identity", width = 0.9, alpha = 0.6) +
+    geom_bar_interactive(stat = "identity", width = 0.4, alpha = 1, 
+                         aes(y = YTD)) +
+    scale_fill_manual(values = my_qual_palette(length(unique(UITF_matrix$Bank)))) +
+    labs(x = "UITF Symbol",
+         title = "Money Market Funds - YTD and YOY Returns",
+         subtitle = "YTD: thin bars | YOY: thick bars") + 
+    coord_flip() +
+    scale_y_continuous(expand = c(0.01,0.03)) +
+    theme(panel.background = element_blank(),
+          panel.grid.major.x = element_line(color = "grey95"),
+          panel.grid.minor.x = element_line(color = "grey95"),
+          axis.ticks.y = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5),
+          legend.background = element_rect(color = "grey50"))
     
+    
+
+ggiraph(ggobj = plot, height_svg = 5, width_svg = 9, width = 1,
+        hover_css = "fill-opacity:0.65; stroke:grey99")
+
+```
+<br />
+
+#### Medium Term Bond Funds
+
+No consistency for medium term bond funds as seen in the graph below. Some funds have negative YOY returns but positive YTD returns. But most of them are positive since the start of the year.
+
+```{r warning=FALSE, message=FALSE}
+
+plot <- fund_performance %>% 
+    filter(`Fund Classification` == "Medium Term Bond Funds") %>% 
+    mutate(tooltip = paste(Name,
+                           paste("Symbol:", Symbol),
+                           paste("Bank:", Bank),
+                           paste("Category:", `Fund Classification`),
+                           paste0("YOY Return: ", 
+                                  formatC(YOY, format="f", digits=2), "%"),
+                           paste0("YTD Return: ", 
+                                  formatC(YTD, format="f", digits=2), "%"),
+                           sep = "\n")) %>% 
+    arrange(Bank, desc(YOY)) %>% 
+    mutate(order = 1:n()) %>% 
+    ggplot(aes(y = YOY, x = reorder(Symbol, desc(order)), fill = Bank,
+               label = paste0(formatC(YOY, format = "f", digits = 2), "%"),
+               tooltip = tooltip, data_id = Symbol)) +
+    geom_bar_interactive(stat = "identity", width = 0.9, alpha = 0.6) +
+    geom_bar_interactive(stat = "identity", width = 0.4, alpha = 1, 
+                         aes(y = YTD)) +
+    scale_fill_manual(values = my_qual_palette(length(unique(UITF_matrix$Bank)))) +
+    labs(x = "UITF Symbol",
+         title = "Medium Term Bond Funds - YTD and YOY Returns",
+         subtitle = "YTD: thin bars | YOY: thick bars") + 
+    coord_flip() +
+    scale_y_continuous(expand = c(0.01,0.03)) +
+    theme(panel.background = element_blank(),
+          panel.grid.major.x = element_line(color = "grey95"),
+          panel.grid.minor.x = element_line(color = "grey95"),
+          axis.ticks.y = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5),
+          legend.background = element_rect(color = "grey50"))
+    
+    
+
+ggiraph(ggobj = plot, height_svg = 3, width_svg = 9, width = 1,
+        hover_css = "fill-opacity:0.65; stroke:grey99")
+
+```
+<br />
+
+#### Intermediate Term Bond Funds
+
+All have positive YTD returns except for UnionBank Infinity Prime Bond. Top performing fund year-over-year is China Bank's Intermediate Fixed Income Fund.
+
+```{r warning=FALSE, message=FALSE}
+
+plot <- fund_performance %>% 
+    filter(`Fund Classification` == "Intermediate Term Bond Funds") %>% 
+    mutate(tooltip = paste(Name,
+                           paste("Symbol:", Symbol),
+                           paste("Bank:", Bank),
+                           paste("Category:", `Fund Classification`),
+                           paste0("YOY Return: ", 
+                                  formatC(YOY, format="f", digits=2), "%"),
+                           paste0("YTD Return: ", 
+                                  formatC(YTD, format="f", digits=2), "%"),
+                           sep = "\n")) %>% 
+    arrange(Bank, desc(YOY)) %>% 
+    mutate(order = 1:n()) %>% 
+    ggplot(aes(y = YOY, x = reorder(Symbol, desc(order)), fill = Bank,
+               label = paste0(formatC(YOY, format = "f", digits = 2), "%"),
+               tooltip = tooltip, data_id = Symbol)) +
+    geom_bar_interactive(stat = "identity", width = 0.9, alpha = 0.6) +
+    geom_bar_interactive(stat = "identity", width = 0.4, alpha = 1, 
+                         aes(y = YTD)) +
+    scale_fill_manual(values = my_qual_palette(length(unique(UITF_matrix$Bank)))) +
+    labs(x = "UITF Symbol",
+         title = "Intermediate Term Bond Funds - YTD and YOY Returns",
+         subtitle = "YTD: thin bars | YOY: thick bars") + 
+    coord_flip() +
+    scale_y_continuous(expand = c(0.01,0.03)) +
+    theme(panel.background = element_blank(),
+          panel.grid.major.x = element_line(color = "grey95"),
+          panel.grid.minor.x = element_line(color = "grey95"),
+          axis.ticks.y = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5),
+          legend.background = element_rect(color = "grey50"))
+    
+    
+
+ggiraph(ggobj = plot, height_svg = 3, width_svg = 9, width = 1,
+        hover_css = "fill-opacity:0.65; stroke:grey99")
+
+```
+<br />
+
+#### Long Term Bond Funds
+
+More than half of these funds are negative year-over-year but all have been positive year-to-date. Top performing funds are from ATRAM.
+
+```{r warning=FALSE, message=FALSE}
+
+plot <- fund_performance %>% 
+    filter(`Fund Classification` == "Long Term Bond Funds") %>% 
+    mutate(tooltip = paste(Name,
+                           paste("Symbol:", Symbol),
+                           paste("Bank:", Bank),
+                           paste("Category:", `Fund Classification`),
+                           paste0("YOY Return: ", 
+                                  formatC(YOY, format="f", digits=2), "%"),
+                           paste0("YTD Return: ", 
+                                  formatC(YTD, format="f", digits=2), "%"),
+                           sep = "\n")) %>% 
+    arrange(Bank, desc(YOY)) %>% 
+    mutate(order = 1:n()) %>% 
+    ggplot(aes(y = YOY, x = reorder(Symbol, desc(order)), fill = Bank,
+               label = paste0(formatC(YOY, format = "f", digits = 2), "%"),
+               tooltip = tooltip, data_id = Symbol)) +
+    geom_bar_interactive(stat = "identity", width = 0.9, alpha = 0.6) +
+    geom_bar_interactive(stat = "identity", width = 0.4, alpha = 1, 
+                         aes(y = YTD)) +
+    scale_fill_manual(values = my_qual_palette(length(unique(UITF_matrix$Bank)))) +
+    labs(x = "UITF Symbol",
+         title = "Long Term Bond Funds - YTD and YOY Returns",
+         subtitle = "YTD: thin bars | YOY: thick bars") + 
+    coord_flip() +
+    scale_y_continuous(expand = c(0.01,0.03)) +
+    theme(panel.background = element_blank(),
+          panel.grid.major.x = element_line(color = "grey95"),
+          panel.grid.minor.x = element_line(color = "grey95"),
+          axis.ticks.y = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5),
+          legend.background = element_rect(color = "grey50"))
+    
+    
+
+ggiraph(ggobj = plot, height_svg = 4.5, width_svg = 9, width = 1,
+        hover_css = "fill-opacity:0.65; stroke:grey99")
+
+```
+<br />
+
+#### Balanced Funds
+
+More than half of these funds are negative year-over-year but all have been positive year-to-date. Top performing funds are from ATRAM.
+
+```{r warning=FALSE, message=FALSE}
+
+plot <- fund_performance %>% 
+    filter(`Fund Classification` == "Balanced Funds") %>% 
+    mutate(tooltip = paste(Name,
+                           paste("Symbol:", Symbol),
+                           paste("Bank:", Bank),
+                           paste("Category:", `Fund Classification`),
+                           paste0("YOY Return: ", 
+                                  formatC(YOY, format="f", digits=2), "%"),
+                           paste0("YTD Return: ", 
+                                  formatC(YTD, format="f", digits=2), "%"),
+                           sep = "\n")) %>% 
+    arrange(Bank, desc(YOY)) %>% 
+    mutate(order = 1:n()) %>% 
+    ggplot(aes(y = YOY, x = reorder(Symbol, desc(order)), fill = Bank,
+               label = paste0(formatC(YOY, format = "f", digits = 2), "%"),
+               tooltip = tooltip, data_id = Symbol)) +
+    geom_bar_interactive(stat = "identity", width = 0.9, alpha = 0.6) +
+    geom_bar_interactive(stat = "identity", width = 0.4, alpha = 1, 
+                         aes(y = YTD)) +
+    scale_fill_manual(values = my_qual_palette(length(unique(UITF_matrix$Bank)))) +
+    labs(x = "UITF Symbol",
+         y = "Percent Return",
+         title = "Balanced Funds - YTD and YOY Returns",
+         subtitle = "YTD: thin bars | YOY: thick bars") + 
+    coord_flip() +
+    scale_y_continuous(expand = c(0.01,0.03)) +
+    theme(panel.background = element_blank(),
+          panel.grid.major.x = element_line(color = "grey95"),
+          panel.grid.minor.x = element_line(color = "grey95"),
+          axis.ticks.y = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5),
+          legend.background = element_rect(color = "grey50"))
+    
+    
+
+ggiraph(ggobj = plot, height_svg = 3, width_svg = 9, width = 1,
+        hover_css = "fill-opacity:0.65; stroke:grey99")
+
+```
+<br />
+
+#### Equity Funds
+
+As seen previously, equity funds yielded good returns both YOY and YTD. All funds have positive YOY and YTD returns. Top performing funds are from ATRAM, BDO, and BPI respectively
+
+```{r warning=FALSE, message=FALSE}
+
+plot <- fund_performance %>% 
+    filter(`Fund Classification` == "Equity Funds") %>% 
+    mutate(tooltip = paste(Name,
+                           paste("Symbol:", Symbol),
+                           paste("Bank:", Bank),
+                           paste("Category:", `Fund Classification`),
+                           paste0("YOY Return: ", 
+                                  formatC(YOY, format="f", digits=2), "%"),
+                           paste0("YTD Return: ", 
+                                  formatC(YTD, format="f", digits=2), "%"),
+                           sep = "\n")) %>% 
+    arrange(Bank, desc(YOY)) %>% 
+    mutate(order = 1:n()) %>% 
+    ggplot(aes(y = YOY, x = reorder(Symbol, desc(order)), fill = Bank,
+               label = paste0(formatC(YOY, format = "f", digits = 2), "%"),
+               tooltip = tooltip, data_id = Symbol)) +
+    geom_bar_interactive(stat = "identity", width = 0.9, alpha = 0.6) +
+    geom_bar_interactive(stat = "identity", width = 0.4, alpha = 1, 
+                         aes(y = YTD)) +
+    scale_fill_manual(values = my_qual_palette(length(unique(UITF_matrix$Bank)))) +
+    labs(x = "UITF Symbol",
+         y = "Percent Return",
+         title = "Equity Funds - YTD and YOY Returns",
+         subtitle = "YTD: thin bars | YOY: thick bars") + 
+    coord_flip() +
+    scale_y_continuous(expand = c(0.01,0.03)) +
+    theme(panel.background = element_blank(),
+          panel.grid.major.x = element_line(color = "grey95"),
+          panel.grid.minor.x = element_line(color = "grey95"),
+          axis.ticks.y = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5),
+          legend.background = element_rect(color = "grey50"))
+    
+    
+
+ggiraph(ggobj = plot, height_svg = 8, width_svg = 9, width = 1,
+        hover_css = "fill-opacity:0.65; stroke:grey99")
+
+```
+<br />
+
+Browse through the interactive table below to have another look at our key performance metrics.
+
+```{r warning=FALSE, message=FALSE}
+
 # display interactive table
 fund_performance %>% 
     arrange(desc(YOY)) %>% 
@@ -910,39 +1327,6 @@ fund_performance %>%
                              )
               )    
     
-```
-<br />
-
-#### Money Market Funds
-```{r warning=FALSE, message=FALSE}
-
-
-
-```
-
-
-### ROI
-
-```{r warning=FALSE, message=FALSE, eval=FALSE}
-
-plot <- price_data %>% 
-    group_by(UITF) %>% 
-    mutate(Price_Date = ifelse(Date == min(Date), "Old", NA)) %>% 
-    mutate(Price_Date = ifelse(Date == max(Date), "New", Price_Date)) %>% 
-    na.omit() %>% 
-    select(UITF, NAVPU, Price_Date) %>% 
-    spread(Price_Date, NAVPU) %>% 
-    mutate(YOY = 100*(New/Old - 1)) %>% 
-    arrange(desc(YOY)) %>% 
-    inner_join(fund_info[, c("Symbol", "Bank", "Fund Name", "Classification", "Risk Classification")], by = c("UITF" = "Symbol")) %>% 
-    ggplot(aes(x = Classification, y = YOY, fill = Classification, col = Classification)) +
-    geom_violin(width = 1.5) +
-    geom_boxplot_interactive(col = "black", fill = "white", width = 0.07, alpha = 0.5) +
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
-    labs(y = "Year over Year (%)")
-
-ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1)
-
 ```
 <br />
 
