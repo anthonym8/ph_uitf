@@ -1427,25 +1427,7 @@ ggiraph(ggobj = plot, height_svg = 5, width_svg = 9, width = 1,
 
 
 
-# Summary
-
-In this simple analysis we were able to gather information about all active UITFs in the Philippines. We were able to accomplish the following:
-
-1. We gathered information on all active UITFs in the Philippines and extracted important insights such as:
-    a. The earliest UITFs were around since 1994.
-    b. There are 122 currently active UITFs either in peso or US dollar denominations offered by 15 different banks.
-    c. The typical minimum initial participation is P10,000 but can be as low as P1,000 for other funds.
-    d. There are 6 different fund classifications based on where the funds are invested in; each carrying a different level of risk categorized as one of conservative, moderate, or aggressive.
-<br />
-2. We identified the top performing UITFs overall and by fund classification and discovered that:
-    a. Equity funds have the highest returns both YTD and YOY
-    b. Majority of long term bond funds are on the negative.
-    c. All money market funds have low but positive returns.
-<br />
-3. We compared the different fund classifications in terms of performance as well as the risk involved by visualizing percent returns and price changes and came up with the following insights:
-    b. Equity funds have the highest price volatility among all classes
-    b. Money market funds have the least variation.
-    c. Money market funds have very low daily price changes but are almost always positive.
+# Conclusion
 
 Monitoring prices on a daily basis will surely give a scare especially for the large price movements for equity funds. However, daily percent changes do not capture the overall trend. This is the reason why the distribution of daily percent changes for almost all UITFs are centered at zero but the YOY returns are mostly positive. It is important to look at the overall trend whether you're looking to maximize gains or preserve your capital. After all, UITFs are generally long term investment instruments.
 
