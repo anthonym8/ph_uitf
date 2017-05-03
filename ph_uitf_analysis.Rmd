@@ -46,10 +46,10 @@ This section describes the data gathering and processing steps. You can skip to 
 <br />
 These 3 raw data sets will then be transformed into our pair of working data sets which are:
 
-|     | Processed Data            | Description                                   |
-|:---:|:--------------------------|:----------------------------------------------|
-|  1  | UITF Matrix               | Comprehensive data frame containing all important information on all available UITFs |
-|  2  | Daily Percent Returns     | Daily price data for the past year represented as percent returns relative to starting date |
+|     | Processed Data                | Description                               |
+|:---:|:------------------------------|:------------------------------------------|
+|  1  | UITF Matrix                   | Comprehensive data frame containing all important information on all available UITFs |
+|  2  | Daily Percent Changes/Returns | Daily price data represented as percent changes relative to yesterday's price and relative to earliest date in our 1-year data |
 
 ```{r message=FALSE, warning=FALSE, results="hide"}
 
@@ -509,11 +509,11 @@ paged_table(head(UITF_matrix, n=3))
 <br />
 
 
-### Processed Data: **Daily Percent Returns**
+### Processed Data: **Percent Change & Return**
 
 #### Quick look at our data
 
-We can have a quick look at our data using a trend chart. Since the prices are on relatively different scales, this graph does not provide much insight and majority of UITFs are compressed in the lower region of the y-axis. However, this confirms that we have our data in a nice format we can work with later on.
+We can have a quick look at our data using a trend chart. Since the prices are on relatively different ranges, this graph does not provide much insight.
 
 ```{r warning=FALSE, message=FALSE}
 
@@ -537,27 +537,20 @@ ggiraph(ggobj = plot, height_svg=5, width_svg = 9, width = 1, tooltip_opacity=0.
 ```
 <br />
 
-#### Calculating returns
+#### Calculating percent changes and returns
 
 To compare these UITFs, the raw daily price data must be converted in terms of percent return relative to the earliest price in our data for each UITF (Apr 26, 2016). Take a look at the same subset of our price data represented as %returns.
 
 ```{r warning=FALSE, message=FALSE}
 
-# get reference prices 1 year before Apr 25, 2017
-first_prices <- price_data %>% 
-    group_by(Symbol) %>% 
-    arrange(Symbol, Date) %>% 
-    slice(1) %>% 
-    select(Symbol, First_Price = NAVPU)
-
 # calculate %returns
 returns_data <- price_data %>% 
+    select(Symbol, Date, NAVPU) %>% 
     group_by(Symbol) %>% 
     arrange(Symbol, Date) %>% 
-    left_join(first_prices) %>% 
-    mutate(Return = ((NAVPU/First_Price)-1)*100) %>% 
-    ungroup() %>% 
-    select(Symbol, Date, Return)
+    mutate(Change = ((NAVPU/lag(NAVPU))-1)*100) %>% 
+    mutate(Return = ((NAVPU/first(NAVPU))-1)*100) %>% 
+    ungroup()
 
 # plot all UITF trends
 plot <- returns_data %>% 
@@ -571,7 +564,7 @@ plot <- returns_data %>%
           plot.title = element_text(hjust = 0.5))
 
 # clean up workspace
-rm(sample_UITFs, first_prices)
+rm(sample_UITFs)
 
 ggiraph(ggobj=plot, height_svg=5, width_svg=9, width=1, tooltip_opacity=0.8)
 
@@ -681,9 +674,9 @@ plot <- plot_data %>%
           axis.ticks.x = element_blank(),
           panel.grid = element_blank(),
           panel.background = element_rect(fill = "grey98"),
-          legend.position = c(0.95, 0.85),
+          legend.position = c(0.94, 0.85),
           legend.direction = "vertical",
-          legend.background = element_rect(fill = "grey98")
+          legend.background = element_rect(color = "grey50")
     ) +
     labs(title = "Portfolio Size per Bank",
          x = "",
@@ -840,7 +833,7 @@ plot <- UITF_matrix %>%
           panel.background = element_rect(fill = "grey98"),
           legend.position = c(0.5, 0.85),
           legend.direction = "horizontal",
-          legend.background = element_rect(fill = "grey98")
+          legend.background = element_rect(color = "grey50")
     ) +
     ggtitle("Portfolio Risk Breakdown") +
     scale_fill_brewer(palette = "Set1") +
@@ -865,7 +858,7 @@ There are different investment instruments in which UITFs are invested in by the
 | Money Market Fund | Short-term debt instruments       | Moderate/Conservative |
 
 <br />
-The risk flavors for each fund classification above is not fixed. These are the typical labels used by banks when marketing their UITF products. The graph below shows how each fund category is labelled by risk flavor according to banks.
+The risk flavors for each fund classification above is not fixed. These are the typical labels used by banks when marketing their UITF products. The graph below shows how each fund classification is labelled by risk flavor according to banks.
 
 ```{r warning=FALSE, message=FALSE}
 plot <- UITF_matrix %>% 
@@ -957,7 +950,7 @@ plot <- fund_performance %>%
     mutate(tooltip = paste(Name,
                            paste("Symbol:", Symbol),
                            paste("Bank:", Bank),
-                           paste("Category:", `Fund Classification`),
+                           paste("Classification:", `Fund Classification`),
                            paste0("YOY Return: ", 
                                   formatC(YOY, format="f", digits=2), "%"),
                            paste0("YTD Return: ", 
@@ -995,7 +988,7 @@ plot <- fund_performance %>%
     mutate(tooltip = paste(Name,
                            paste("Symbol:", Symbol),
                            paste("Bank:", Bank),
-                           paste("Category:", `Fund Classification`),
+                           paste("Classification:", `Fund Classification`),
                            paste0("YOY Return: ", 
                                   formatC(YOY, format="f", digits=2), "%"),
                            paste0("YTD Return: ", 
@@ -1024,6 +1017,9 @@ ggiraph(ggobj = plot, height_svg = 4.5, width_svg = 9, width = 1,
 ```
 <br />
 
+
+### Performance by Fund Classification
+
 #### Money Market Funds
 
 Chinabank UITFs had the best returns for money market funds, followed by PNB and BDO. Meanwhile, MetroBank money market funds had the lowest gains year-over-year.
@@ -1035,7 +1031,7 @@ plot <- fund_performance %>%
     mutate(tooltip = paste(Name,
                            paste("Symbol:", Symbol),
                            paste("Bank:", Bank),
-                           paste("Category:", `Fund Classification`),
+                           paste("Classification:", `Fund Classification`),
                            paste0("YOY Return: ", 
                                   formatC(YOY, format="f", digits=2), "%"),
                            paste0("YTD Return: ", 
@@ -1082,7 +1078,7 @@ plot <- fund_performance %>%
     mutate(tooltip = paste(Name,
                            paste("Symbol:", Symbol),
                            paste("Bank:", Bank),
-                           paste("Category:", `Fund Classification`),
+                           paste("Classification:", `Fund Classification`),
                            paste0("YOY Return: ", 
                                   formatC(YOY, format="f", digits=2), "%"),
                            paste0("YTD Return: ", 
@@ -1129,7 +1125,7 @@ plot <- fund_performance %>%
     mutate(tooltip = paste(Name,
                            paste("Symbol:", Symbol),
                            paste("Bank:", Bank),
-                           paste("Category:", `Fund Classification`),
+                           paste("Classification:", `Fund Classification`),
                            paste0("YOY Return: ", 
                                   formatC(YOY, format="f", digits=2), "%"),
                            paste0("YTD Return: ", 
@@ -1157,8 +1153,6 @@ plot <- fund_performance %>%
           plot.subtitle = element_text(hjust = 0.5),
           legend.background = element_rect(color = "grey50"))
     
-    
-
 ggiraph(ggobj = plot, height_svg = 3, width_svg = 9, width = 1,
         hover_css = "fill-opacity:0.65; stroke:grey99")
 
@@ -1176,7 +1170,7 @@ plot <- fund_performance %>%
     mutate(tooltip = paste(Name,
                            paste("Symbol:", Symbol),
                            paste("Bank:", Bank),
-                           paste("Category:", `Fund Classification`),
+                           paste("Classification:", `Fund Classification`),
                            paste0("YOY Return: ", 
                                   formatC(YOY, format="f", digits=2), "%"),
                            paste0("YTD Return: ", 
@@ -1223,7 +1217,7 @@ plot <- fund_performance %>%
     mutate(tooltip = paste(Name,
                            paste("Symbol:", Symbol),
                            paste("Bank:", Bank),
-                           paste("Category:", `Fund Classification`),
+                           paste("Classification:", `Fund Classification`),
                            paste0("YOY Return: ", 
                                   formatC(YOY, format="f", digits=2), "%"),
                            paste0("YTD Return: ", 
@@ -1271,7 +1265,7 @@ plot <- fund_performance %>%
     mutate(tooltip = paste(Name,
                            paste("Symbol:", Symbol),
                            paste("Bank:", Bank),
-                           paste("Category:", `Fund Classification`),
+                           paste("Classification:", `Fund Classification`),
                            paste0("YOY Return: ", 
                                   formatC(YOY, format="f", digits=2), "%"),
                            paste0("YTD Return: ", 
@@ -1332,10 +1326,129 @@ fund_performance %>%
 
 
 # Risk Analysis
+
+Looking at YTD and YOY returns does not tell the entire story. Equity funds may have yielded the best returns among all types of funds. However, looking at the graph below, your returns depend a lot on your entry and exit points, especially with equity funds which took a 5-month plunge and has since only recovered. Balanced funds tell almost the same story but the relative price movements are much smaller in comparison. On the other end, money market funds look pretty much  a straight line with a very shallow slope.
+
+These price movements are what defines which funds are likely to be aggressive, of moderate risk, or conservative.
+
+```{r warning=FALSE, message=FALSE}
+
+plot <- returns_data %>% 
+    left_join(UITF_matrix[, c("Symbol", "Name", "Bank", "Fund Classification")]) %>% 
+    mutate(tooltip = paste(Name,
+                           paste("Symbol:", Symbol),
+                           paste("Bank:", Bank),
+                           paste("Classification:", `Fund Classification`),
+                           sep = "\n")) %>% 
+    ggplot(aes(x = Date, y = Return, group = Symbol,
+               col = `Fund Classification`)) +
+    geom_line(alpha = 0.4) +
+    labs(title = "Daily Percent Returns of all UITFs") +
+    scale_colour_brewer(palette = "Dark2") +
+    theme(legend.position = "bottom",
+          plot.title = element_text(hjust = 0.5),
+          panel.background = element_rect(fill = "grey95"))
+
+ggiraph(ggobj = plot, height_svg = 5, width_svg = 9, width = 1,
+        hover_css = "stroke:black; stroke-width:2")
+
+```
+<br />
+
+Another way to look at the volatility of prices is the daily percent changes. Based from the graph below, key observations are:
+
+1. Equity funds have a wild variation between daily prices.
+2. Money market funds have the smallest swings among all classifications.
+3. Intermediate-term and medium-term bond funds look very similar.
+
+```{r message=FALSE, warning=FALSE}
+
+plot <- returns_data %>% 
+    left_join(UITF_matrix[, c("Symbol", "Fund Classification")]) %>% 
+    mutate(`Fund Classification` = factor(`Fund Classification`,
+                                          levels = c("Equity Funds",
+                                                     "Balanced Funds",
+                                                     "Long Term Bond Funds",
+                                                     "Intermediate Term Bond Funds",
+                                                     "Medium Term Bond Funds",
+                                                     "Money Market Funds"))) %>% 
+    ggplot(aes(x = Date, y = Change, group = Symbol,
+               col = `Fund Classification`)) +
+    geom_line(alpha = 0.4) +
+    facet_grid(. ~ `Fund Classification`) +
+    labs(title = "Daily Percent Returns of all UITFs") +
+    scale_colour_brewer(palette = "Dark2") +
+    theme(legend.position = "bottom",
+          plot.title = element_text(hjust = 0.5),
+          axis.text.x = element_text(angle = 90),
+          panel.background = element_rect(fill = "grey95"))
+
+ggiraph(ggobj = plot, height_svg = 5, width_svg = 9, width = 1,
+        hover_css = "stroke:black; stroke-width:2")
+
+```
+<br />
+
+Another way to look at the above comparison is through the density plots below for each UITF separated by class. The relative size of daily price changes is again obvious across different fund classifications. An interesting observation here is that all distributions seem to be centered at zero except for money market funds whose means are a little above zero. This tells a lot how money market funds are considered conservative; low gains but very little risk involved
+
+```{r warning=FALSE, message=FALSE}
+
+plot <- returns_data %>% 
+    left_join(UITF_matrix[, c("Symbol", "Fund Classification")]) %>% 
+    mutate(`Fund Classification` = factor(`Fund Classification`,
+                                          levels = c("Equity Funds",
+                                                     "Balanced Funds",
+                                                     "Long Term Bond Funds",
+                                                     "Intermediate Term Bond Funds",
+                                                     "Medium Term Bond Funds",
+                                                     "Money Market Funds"))) %>% 
+    ggplot(aes(x = Change, fill = `Fund Classification`, group = Symbol)) +
+    geom_density(aes(y = ..scaled..), col = NA, alpha = 0.2) +
+    geom_vline(xintercept = 0, size = 0.1) +
+    labs(title = "Density Estimate of Daily Percent Changes per UITF") +
+    scale_colour_brewer(palette = "Dark2") +
+    scale_x_continuous(limits = c(-3, 3), breaks = seq(-5,5,1)) +
+    facet_wrap(~`Fund Classification`, ncol = 1, strip.position = "top") +
+    labs(y = "", 
+         x = "Percent Change") +
+    theme(plot.title = element_text(hjust = 0.5),
+          axis.text.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          panel.background = element_rect(fill = "grey95"),
+          strip.text.x = element_blank()
+          )
+    
+
+ggiraph(ggobj = plot, height_svg = 5, width_svg = 9, width = 1,
+        hover_css = "stroke:black; stroke-width:2")
+
+```
 <br />
 
 
-# Conclusion
+
+# Summary
+
+In this simple analysis we were able to gather information about all active UITFs in the Philippines. We were able to accomplish the following:
+
+1. We gathered information on all active UITFs in the Philippines and extracted important insights such as:
+    a. The earliest UITFs were around since 1994.
+    b. There are 122 currently active UITFs either in peso or US dollar denominations offered by 15 different banks.
+    c. The typical minimum initial participation is P10,000 but can be as low as P1,000 for other funds.
+    d. There are 6 different fund classifications based on where the funds are invested in; each carrying a different level of risk categorized as one of conservative, moderate, or aggressive.
 <br />
+2. We identified the top performing UITFs overall and by fund classification and discovered that:
+    a. Equity funds have the highest returns both YTD and YOY
+    b. Majority of long term bond funds are on the negative.
+    c. All money market funds have low but positive returns.
+<br />
+3. We compared the different fund classifications in terms of performance as well as the risk involved by visualizing percent returns and price changes and came up with the following insights:
+    b. Equity funds have the highest price volatility among all classes
+    b. Money market funds have the least variation.
+    c. Money market funds have very low daily price changes but are almost always positive.
+
+Monitoring prices on a daily basis will surely give a scare especially for the large price movements for equity funds. However, daily percent changes do not capture the overall trend. This is the reason why the distribution of daily percent changes for almost all UITFs are centered at zero but the YOY returns are mostly positive. It is important to look at the overall trend whether you're looking to maximize gains or preserve your capital. After all, UITFs are generally long term investment instruments.
+
+Finally, the performance comparisons done here are true only for the subset of price history for May 2, 2016 to Apr 27, 2017. It will be good to gather more data for a longer date range extending to years prior to better generalize our observations and also to monitor future prices and be able to redo our analysis.
 
 
