@@ -1,1 +1,4 @@
 # ph_uitf
+
+Repo for my analysis on UITFs in the Philippines, written in RMarkdown.  
+Check out my blog posts for this on [r-mas.github.io/blog](https://r-mas.github.io.blog/)
