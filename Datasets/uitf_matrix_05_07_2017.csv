@@ -1,0 +1,299 @@
+Symbol,Name,Bank,Currency,Fund Classification,Risk Classification,Inception Date,Min. Initial Participation,Min. Additional Participation,Min. Maintaining Balance,Min. Holding Period,Cut-Off Time for Redemption,Settlement Date (T + # of Days),Trust Fee Structure,Early Redemption Fee,Benchmark
+ABCAPEQ:PM,AB Capital Equity Fund,AB Capital,PHP,Equity Funds,Aggressive,2006-12-04,25e3,1e4,25e3,"30 calendar 
+			            days",12:00 PM,T + 3,1.25% PA,1.00% of the Principal,NA
+AUBBEIF:PM,Equity Investment Fund,Asia United Bank,PHP,Equity Funds,Aggressive,2006-05-04,1e4,1e3,1e4,"30 calendar 
+			            days",12:00 PM,T + 3 days,1.25% per annum based on the Net Asset Value (NAV),0.50% of amount redeemed,90-day yield of the Philippine Stock Exchange Index (PSEi)
+AUBBGDF:PM,Gold Dollar Fund,Asia United Bank,USD,Medium Term Bond Funds,Moderate,2005-05-03,5e3,1e3,5e3,"30 calendar 
+			            days",12:00 PM,T + 1 day,1.75% per annum based on the Net Asset Value (NAV),0.50% of amount redeemed,5-year US Treasury Notes
+AUBPPIF:PM,Peso Investment Fund,Asia United Bank,PHP,Medium Term Bond Funds,Moderate,2005-05-03,1e4,1e3,1e4,"30 calendar 
+			            days",12:00 PM,T + 1 day,1.25% per annum based on the Net Asset Value (NAV),0.50% of amount redeemed,5-yr PDST-R2
+AUBPMMF:PM,Peso Money Market Fund,Asia United Bank,PHP,Money Market Funds,Moderate,2013-10-30,1e4,1e3,1e4,"30 calendar 
+			            days",12:00 PM,T + 1 day,0.30% per annum based on the Net Asset Value (NAV),0.5% of amount redeemed,30 day Tbills
+ATRASEQ:PM,ATRAM Asia Equity Opportunity Feeder Fund,ATRAM,PHP,Equity Funds,Aggressive,2016-12-08,1e3,1e3,1e3,"0 calendar 
+			            days",03:00 PM,"Subscription: T + 2 business days, Redemption: T + 7 business days",0.95% p.a.,none,MSCI AC Asia Pacific ex Japan Net Index
+ATREMFI:PM,ATRAM Emerging Markets Bond Feeder Fund,ATRAM,USD,Long Term Bond Funds,Moderate,2013-11-13,1e3,500.0,1e3,"0 calendar 
+			            days",03:00 PM,"Subscription: T + 1 business day, Redemption: T + 7 business days",0.65% p.a.,none,JP Morgan EMBI Global Index
+ATREMEQ:PM,ATRAM Emerging Markets Equity Opportunity Feeder Fund,ATRAM,USD,Equity Funds,Aggressive,2013-11-13,1e3,500.0,1e3,"0 calendar 
+			            days",03:00 PM,"Subscription: T + 1 business day, Redemption: T + 7 business days",0.95% p.a.,none,MSCI Emerging Markets Index
+ATREUEQ:PM,ATRAM European Equity Opportunity Feeder Fund,ATRAM,USD,Equity Funds,Aggressive,2015-02-24,1e3,500.0,1e3,"0 calendar 
+			            days",03:00 PM,"Subscription: T + 2 business days, Redemption: T + 7 business days",0.90% p.a.,none,MSCI Europe Net Index
+ATRGLAA:PM,ATRAM Global Allocation Feeder Fund,ATRAM,USD,Balanced Funds,Aggressive,2014-07-28,1e3,500.0,1e3,"0 banking 
+			            days",03:00 PM,"Subscription: T + 2 business days, Redemption: T + 7 business days",0.90% p.a.,none,Custom: 36% S&P 500 Composite; 24% FTSE World (ex-US); 24% ML US Treasury Current 5 Year; 16% Citigroup Non-USD World Government Bond Index
+ATRGLDV:PM,ATRAM Global Dividend Feeder Fund,ATRAM,PHP,Equity Funds,Aggressive,2016-05-10,1e3,1e3,1e3,"0 calendar 
+			            days",03:00 PM,"Subscription: T + 2 business days, Redemption: T + 7 business days",0.90% p.a.,none,MSCI AC World Net Index
+ATRGLEQ:PM,ATRAM Global Equity Opportunity Feeder Fund,ATRAM,USD,Equity Funds,Aggressive,2014-07-28,1e3,500.0,1e3,"0 banking 
+			            days",03:00 PM,"Subscription: T + 2 business days, Redemption: T + 7 business days",0.90% p.a.,none,MSCI World Index
+ATRGLFI:PM,ATRAM Global Total Return Bond Feeder Fund,ATRAM,USD,Long Term Bond Funds,Moderate,2014-07-28,1e3,500.0,1e3,"0 banking 
+			            days",03:00 PM,"Subscription: T + 2 business days, Redemption: T + 7 business days",0.65% p.a.,none,Barclays Multiverse Index
+ATRPHMM:PM,ATRAM Peso Money Market Fund,ATRAM,PHP,Money Market Funds,Conservative,2013-12-16,1e4,5e3,1e4,"0 banking 
+			            days",11:00 AM,T + 0,0.5% p.a.,None,30-day Philippine Special Savings Rate
+ATRPHFI:PM,ATRAM Total Return Peso Bond Fund,ATRAM,PHP,Long Term Bond Funds,Moderate,2014-10-28,1e4,5e3,1e4,"30 calendar 
+			            days",03:00 PM,"Subscription: T + 1 business day, Redemption: T + 2 business days",1.10% p.a.,1% of amount redeemed,Bloomberg Philippine Sovereign Bond Index (adjusted)
+ATRUSEQ:PM,ATRAM US Equity Opportunity Feeder Fund,ATRAM,USD,Equity Funds,Aggressive,2015-10-23,1e3,500.0,1e3,"0 calendar 
+			            days",03:00 PM,"Subscription: T + 2 business days, Redemption: T + 7 business days",0.90% p.a.,none,Russel 3000 Growth Index
+BNCDDFF:PM,Diversity Dividend Focused Fund,Bank of Commerce,PHP,Equity Funds,Aggressive,2015-04-08,1e4,5e3,1e4,"30 calendar 
+			            days",11:30 AM,4,1.50% p.a. based on the Net Asset Value (NAV) accrued daily,5% of the redeemed amount,Stock Exchange Index (PSEi)
+BNCMDLR:PM,Diversity Dollar Bond Fund,Bank of Commerce,USD,Long Term Bond Funds,Moderate,2005-03-11,1e3,100.0,1e3,"30 calendar 
+			            days",11:30 AM,1,1% p.a. based on the Net Asset value (NAV) accrued daily,5% of the redeemed amount,Bid price of 10-year Republic of the Philippines (ROP) Bonds from Bloomberg Generic (BGN) at the start of the quarter
+BNCDMMF:PM,Diversity Money Market Fund,Bank of Commerce,PHP,Money Market Funds,Conservative,2013-08-16,1e4,5e3,1e4,"30 calendar 
+			            days",11:30 AM,T+1,0.25% p.a.,5% of the redeemed amount,Three-month yield based on the PDST-R2 at the start of the quarter
+BNCMPST:PM,Diversity Peso Bond Fund,Bank of Commerce,PHP,Long Term Bond Funds,Moderate,2005-03-10,1e4,5e3,1e4,"30 calendar 
+			            days",11:30 AM,1,1% p.a. based on the Net Asset Value (NAV) accrued daily,5% of the redeemed amount,5-year yield based on Philippine Dealing System Treasury Reference 2(PDST-R2)
+BDOCEFF:PM,BDO China Equity Feeder Fund,BDO,USD,Equity Funds,Aggressive,2015-10-29,2e3,2e3,2e3,"0 calendar 
+			            days",04:00 PM,Five (5) banking days after redemption valuation date (T + 5),1.00% p.a.,0%,80% MSCI China Index and 20% CSI 300 Index
+BDODMPI:PM,BDO Developed Markets Property Index Feeder Fund,BDO,USD,Equity Funds,Aggressive,2015-04-30,2e3,2e3,2e3,"0 calendar 
+			            days",04:00 PM,Five (5) banking days after redemption valuation date (T + 5),0.50% p.a.,0%,FTSE EPRA/NAREIT Developed Markets Index
+BDODBF:PM,BDO Dollar Bond Fund,BDO,USD,Intermediate Term Bond Funds,Moderate,2005-04-29,2e3,2e3,2e3,"30 calendar 
+			            days",02:30 PM,Three (3) banking days after notice of redemption is received (T + 3),0.75% p.a.,0.50% of the Original Participation Amount,1-3 Years ROP Weighted Price Index (based on FMPH prices)
+BDODMMF:PM,BDO Dollar Money Market Fund,BDO,USD,Money Market Funds,Moderate,2005-04-29,2e3,2e3,2e3,"30 calendar 
+			            days",11:30 AM,After 4:00 p.m. on the same banking day the notice of redemption is received (T + 0),0.50% p.a.,0.50% of the Original Participation Amount,US Dollar Time Deposit Rate
+EPCIBEQ:PM,BDO Equity Fund,BDO,PHP,Equity Funds,Aggressive,2005-05-03,1e4,1e4,1e4,"30 calendar 
+			            days",02:30 PM,Four (4) banking days after notice of redemption is received (T + 4),1.00% p.a.,1.00% of the Original Participation Amount,PSEi
+BDOEQIF:PM,BDO Equity Index Fund,BDO,PHP,Equity Funds,Aggressive,2015-07-10,1e4,1e4,1e4,"30 calendar 
+			            days",02:30 PM,Four (4) banking days after notice of redemption is received (T + 4),1.00% p.a.,0.50% of the Original Participation Amount,PSEi
+BDOESGF:PM,BDO ESG Equity Fund,BDO,PHP,Equity Funds,Aggressive,2015-12-11,1e4,1e4,1e4,"30 calendar 
+			            days",02:30 PM,Four (4) banking days after notice of redemption is received (T + 4),1.00% p.a.,1.00% of the Original Participation Amount,PSEi
+BDOTFEF:PM,BDO Focused Equity Fund,BDO,PHP,Equity Funds,Aggressive,2013-10-18,1e4,1e4,1e4,"30 calendar 
+			            days",02:30 PM,Four (4) banking days after the notice of redemption is received (T + 4),1.50% p.a.,1.00% of the Original Participation Amount,PSEi
+BDOGESF:PM,BDO Global Equity Select Feeder Fund,BDO,USD,Equity Funds,Aggressive,2015-11-03,2e3,2e3,2e3,"0 calendar 
+			            days",04:00 PM,Five (5) banking days after redemption valuation date (T + 5),1.00% p.a.,0%,MSCI All-Country World Index (MSCI ACWI)
+EPCIBGS:PM,BDO GS Fund,BDO,PHP,Medium Term Bond Funds,Moderate,2005-05-03,1e5,1e5,1e5,"30 calendar 
+			            days",02:30 PM,One (1) banking day after notice of redemption is received (T + 1),1.00% p.a.,0.50% of the Original Participation Amount,iBoxx ALBI Philippines 1-5 (Domestic) Index
+BDOICRF:PM,BDO Institutional Cash Reserve Fund,BDO,PHP,Money Market Funds,Moderate,2011-11-25,0.0,0.0,0.0,"0 calendar 
+			            days",11:30 AM,After 4:00 p.m. on the same banking day the notice of redemption is received (T + 0),None,None,Bloomberg Ave. 30-day Special Savings Rate
+BDOEQTY:PM,BDO Institutional Equity Fund,BDO,PHP,Equity Funds,Aggressive,2005-06-15,1e3,1e3,0.0,"30 calendar 
+			            days",02:30 PM,Five (5) banking days after notice of redemption is received (T + 5),1.00% p.a.,0.50% of the Original Participation Amount,PSEi
+EPCIBUS:PM,BDO Medium Term Dollar Bond Fund,BDO,USD,Medium Term Bond Funds,Moderate,2005-05-03,2e3,2e3,2e3,"30 calendar 
+			            days",02:30 PM,Three (3) banking days after notice of redemption is received (T + 3),1.00% p.a.,1.00% of the Original Participation Amount,3-5 Years ROP Weighted Price Index (based on FMPH prices)
+BDOMERB:PM,BDO Merit Fund Medium Term Fund,BDO,PHP,Medium Term Bond Funds,Moderate,2010-05-06,1e3,1e3,0.0,"0 calendar 
+			            days",02:30 PM,One (1) banking day after notice of redemption is received (T + 1),0.825% p.a.,None,iBoxx ALBI Philippines 1-5 (Domestic) Index
+EPCIBME:PM,BDO Merit Fund Short Term Fund,BDO,PHP,Intermediate Term Bond Funds,Moderate,2005-12-19,1e3,1e3,0.0,"0 calendar 
+			            days",02:30 PM,One (1) banking day after notice of redemption is received (T + 1),0.825% p.a.,None,iBoxx ALBI Philippines 1-3 (Domestic) Index
+BDOPEIF:PM,BDO Pera Equity Index Fund,BDO,PHP,Equity Funds,Aggressive,2016-12-22,1e3,1e3,1e3,"30 calendar 
+			            days",02:30 PM,Four (4) banking days after notice of redemption is received (T + 4),1.00% p.a.,1.00% of the Original Participation Amount,PSEi
+BDOPBAL:PM,BDO Peso Balanced Fund,BDO,PHP,Balanced Funds,Aggressive,2003-07-03,1e4,1e4,1e4,"30 calendar 
+			            days",02:30 PM,Four (4) banking days after notice of redemption is received (T + 4),1.00% p.a.,0.50% of the Original Participation Amount,50% PSEi and 50% iBoxx ALBI Philippines 1-5 (Domestic) Index
+BDOPFIF:PM,BDO Peso Bond Fund,BDO,PHP,Medium Term Bond Funds,Moderate,2005-04-29,1e4,1e4,1e4,"30 calendar 
+			            days",02:30 PM,One (1) banking day after notice of redemption is received (T + 1),1.00% p.a.,0.50% of the Original Participation Amount,iBoxx ALBI Philippines 1-5 (Domestic) Index
+BDOPMMF:PM,BDO Peso Money Market Fund,BDO,PHP,Money Market Funds,Moderate,2005-04-01,1e5,1e5,1e5,"0 calendar 
+			            days",11:30 AM,After 4:00 p.m. on the same banking day the notice of redemption is received (T + 0),0.50% p.a.,None,91 Day T-Bill Rate
+BDOTSDF:PM,BDO Sustainable Dividend Fund,BDO,PHP,Equity Funds,Aggressive,2013-10-18,1e4,1e4,1e4,"30 calendar 
+			            days",02:30 PM,Four (4) banking days after the notice of redemption is received (T + 4),1.25% p.a.,1.00% of the Original Participation Amount,PSEi
+BDOUSEF:PM,BDO US Equity Feeder Fund,BDO,USD,Equity Funds,Aggressive,2016-04-18,2e3,2e3,2e3,"0 calendar 
+			            days",04:00 PM,Five (5) banking days after redemption valuation date (T + 5),1.00% p.a.,0%,Russell 3000 Growth Index
+ABFPH:PM,ABF Philippines Bond Index Fund,BPI,PHP,Long Term Bond Funds,Moderate,2005-04-21,1e4,1e3,1e4,"0 calendar 
+			            days",12:00 PM,T+1,0.080% p.a. Trust Fee / 0.186% p.a. Management and Advisory Fee,None,iBoxx Philippines Index
+BPIEQBL:PM,BPI Balanced Fund,BPI,PHP,Balanced Funds,Aggressive,2005-04-04,1e4,1e3,1e4,"0 calendar 
+			            days",02:30 PM,T+3,1.50%  p.a.,None,"50% Philippine Stock Exchange Index (PSEi) and 50% return of the 91-day Treasury Bill, net of tax."
+BPIEQUI:PM,BPI Equity Fund,BPI,PHP,Equity Funds,Aggressive,2005-04-04,1e4,1e3,1e4,"0 calendar 
+			            days",02:30 PM,T+3,1.50% p.a.,None,Philippine Stock Exchange index (PSEi)
+BPIEUFF:PM,BPI European Equity Feeder Fund,BPI,USD,Equity Funds,Aggressive,2014-08-05,1e3,500.0,1e3,"0 calendar 
+			            days",02:00 PM,T+7,0.75% p.a.,None,MSCI Europe Index
+BPIFIP:PM,BPI Fixed Income Fund Of Fund,BPI,PHP,Long Term Bond Funds,Aggressive,2016-09-01,1e6,1e4,1e6,"0 calendar 
+			            days",12:00 PM,T+3,None: trust fees are collected at the Target Fund level.,None,BPI Philippine Government Bond Index
+BPIINFP:PM,BPI Global Bond Fund Of Fund,BPI,USD,Medium Term Bond Funds,Moderate,1998-11-02,500.0,200.0,500.0,"0 calendar 
+			            days",12:00 PM,T+7,0.75% p.a.,None,3-month U.S. Treasury Bill
+BPINSTI:PM,BPI Money Market Fund,BPI,PHP,Money Market Funds,Moderate,2005-04-04,1e4,1e3,1e4,"0 calendar 
+			            days",12:00 PM,T+0 (end-of-day),0.25% p.a.,None,"91-day Treasury Bill, net of tax"
+BPIPCEI:PM,BPI Philippine Consumer Equity Index Fund,BPI,PHP,Equity Funds,Aggressive,2017-01-16,1e4,1e3,1e4,"0 calendar 
+			            days",02:30 PM,T+0,1.50%,None,BPI Philippine Consumer Equity Index
+BPIDBIX:PM,BPI Philippine Dollar Bond Index Bond Fund,BPI,USD,Long Term Bond Funds,Aggressive,2006-12-31,500.0,200.0,500.0,"0 calendar 
+			            days",12:00 PM,T+3,0.25%  p.a.,None,JPMorgan Asia Credit Philippines Total Return Index
+BPIPEIF:PM,BPI Philippine Equity Index Fund,BPI,PHP,Equity Funds,Aggressive,2013-05-20,1e4,1e3,1e4,"0 calendar 
+			            days",02:30 PM,T+3,1.50% p.a.,None,Philippine Stock Exchange index (PSEi)
+BPPHDEF:PM,BPI Philippine High Dividend Equity Fund,BPI,PHP,Equity Funds,Aggressive,2013-08-16,1e4,1e3,1e4,"0 calendar 
+			            days",02:30 PM,T+3,1.50% p.a.,None,Philippine Stock Exchange index (PSEi)
+BPIPIEI:PM,BPI Philippine Infrastructure Equity Index Fund,BPI,PHP,Equity Funds,Aggressive,2017-01-16,1e4,1e3,1e4,"0 calendar 
+			            days",02:30 PM,T+0,1.50% p.a.,None,BPI Philippine Infrastructure Equity Index
+BPIPRUI:PM,BPI Premium Bond Fund,BPI,PHP,Intermediate Term Bond Funds,Moderate,2005-04-04,1e4,1e3,1e4,"0 calendar 
+			            days",12:00 PM,T+0 (end of day),1.50% p.a.,None,BPI Philippine Government Bond 1-3 Year Index
+BPSTUIT:PM,BPI Short Term Fund,BPI,PHP,Money Market Funds,Moderate,2005-04-04,1e4,1e3,1e4,"0 calendar 
+			            days",01:30 PM,T+0 (end of day),0.50% p.a.,None,91-day Treasury Bill net of tax
+BPIGLPH:PM,BPI US Dollar Short Term Fund,BPI,USD,Money Market Funds,Moderate,1994-08-30,500.0,200.0,500.0,"0 calendar 
+			            days",12:00 PM,T+0 (end-of-day),0.50% p.a.,None,3-month U.S. Treasury Bill
+BPIUSFF:PM,BPI US Equity Index Feeder Fund,BPI,USD,Equity Funds,Aggressive,2014-08-05,1e3,500.0,1e3,"0 calendar 
+			            days",02:00 PM,T+7,0.75% p.a.,None,S&P® 500 Index
+INGAPHD:PM,Odyssey Asia Pacific High Dividend Equity Fund,BPI,USD,Equity Funds,Aggressive,2008-05-20,5e3,1e3,5e3,"0 calendar 
+			            days",02:00 PM,T+6,1.75% p.a.,None,MSCI AC Asia Pacific ex-Japan Total Return Index
+INGDVBA:PM,Odyssey Diversified Balanced Fund,BPI,PHP,Balanced Funds,Aggressive,2006-05-12,1e4,5e3,1e4,"0 calendar 
+			            days",02:30 PM,T+3,1.50% p.a.,None,"50% BPI Philippine Government Bond Index 
+50% Philippine Stock Exchange Index"
+INGDVCP:PM,Odyssey Diversified Capital Fund,BPI,PHP,Balanced Funds,Aggressive,2006-12-04,1e4,5e3,1e4,"0 calendar 
+			            days",02:30 PM,T+3,1.50% p.a.,None,"70% BPI Philippine Government Bond Index
+30% Philippine Stock Exchange Index"
+INGPFIN:PM,Odyssey Peso Bond Fund,BPI,PHP,Long Term Bond Funds,Aggressive,2003-05-05,1e4,5e3,1e4,"0 calendar 
+			            days",02:00 PM,T+1,1.00% p.a.,None,BPI Philippine Government Bond Index
+INGPINC:PM,Odyssey Peso Medium Term Bond Investment Fund,BPI,PHP,Medium Term Bond Funds,Moderate,2007-10-01,1e4,5e3,1e4,"0 calendar 
+			            days",02:00 PM,T+1,1.00% p.a.,None,BPI Philippine Government Bond 1-5 Year Index
+INGPDFI:PM,Odyssey Philippine Dollar Bond Fund,BPI,USD,Long Term Bond Funds,Aggressive,2003-05-05,1e3,100.0,1e3,"0 calendar 
+			            days",02:00 PM,T+3,1.25% p.a.,None,JP Morgan Chase Asia Total Return Philippines Index
+INGPHEQ:PM,Odyssey Philippine Equity Fund,BPI,PHP,Equity Funds,Aggressive,2003-05-05,1e4,5e3,1e4,"0 calendar 
+			            days",02:30 PM,T+3,2.00% p.a.,None,Philippine Stock Exchange Index (PSEi)
+INGPHCE:PM,Odyssey Philippine High Conviction Equity Fund,BPI,PHP,Equity Funds,Aggressive,2007-02-01,1e4,5e3,1e4,"0 calendar 
+			            days",02:30 PM,T+3,2.50% p.a.,None,Philippine Stock Exchange Index (PSEi)
+INGTEFI:PM,Odyssey Tax Exempt Peso Fixed Income Fund,BPI,PHP,Long Term Bond Funds,Aggressive,2004-01-06,1e5,5e4,1e5,"0 calendar 
+			            days",02:00 PM,T+1,1.00% p.a.,None,BPI Philippine Government Bond Index
+INGTEPE:PM,Odyssey Tax Exempt Philippine Equity Fund,BPI,PHP,Equity Funds,Aggressive,2004-01-06,1e5,5e4,1e5,"0 calendar 
+			            days",02:30 PM,T+3,2.00% p.a.,None,Philippine Stock Exchange index (PSEi)
+CNBKBLF:PM,China Bank Balanced Fund,China Bank,PHP,Balanced Funds,Moderate,2011-02-18,5e4,1e4,5e4,"30 calendar 
+			            days",12:00 PM,T + 3,1.0% per annum based on the Net Asset Value (NAV) of the Fund before trust fee for the day,1.0% of the amount redeemed,The weighted average return of the appropriate Philippine Dealing Exchange (PDEX) average PDST (R2) corresponding to the actual average duration of the fixed-income component of the Fund and the PSE Index (PSEi) for the equity portion.
+CNBKDOF:PM,China Bank Dollarfund,China Bank,USD,Long Term Bond Funds,Moderate,2005-09-09,2e3,1e3,2e3,"30 calendar 
+			            days",12:00 PM,T + 3,0.75% per annum based on the Net Asset Value (NAV) of the Fund before trust fee for the day,1.50% p.a. of the amount redeemed if redemption is made during the first half of the minimum holding period; 1.0% p.a. of the amount redeemed if redemption is made during the second half of the minimum holding period or a flat amount of $25.00 whichever i,"The appropriate HSBC Asian US Dollar Bond Index, Philippine Total Return."
+CNBEQYF:PM,China Bank Equity Fund,China Bank,PHP,Equity Funds,Aggressive,2013-06-11,5e4,1e4,5e4,"30 calendar 
+			            days",12:00 PM,T+3,1.0% based on NAV before trust fee for the day,1.0% of redemption proceeds,PSEi for equity portion PDSS - 1 month index for fixed income component
+CNBKGSF:PM,China Bank GS Fund,China Bank,PHP,Long Term Bond Funds,Moderate,2006-03-24,5e4,1e4,5e4,"30 calendar 
+			            days",12:00 PM,T + 1,1.0% per annum based on the Net Asset Value (NAV) of the Fund before trust fee for the day,1.0% of the amount redeemed,The appropriate Philippine Dealing Exchange (PDEX) average PDST (R2) rate corresponding to the actual average
+CNBHDEF:PM,China Bank High Dividend Equity Fund,China Bank,PHP,Equity Funds,Aggressive,2015-06-26,5e4,1e4,5e4,"30 calendar 
+			            days",12:00 PM,T+3,1.0% per annum based on the Net Asset Value (NAV) of the Fund before trust fee for the day,1.0% of the amount redeemed,"The weighted average return of the Philippine Stock Exchange Index (PSEi) and the Philippine Dealing Exchange (PDEX) 30-day PDST (RS) rate for the fixed-income portion, if any."
+CNBIMMF:PM,China Bank Institutional Money Market Fund,China Bank,PHP,Money Market Funds,Moderate,2015-06-26,5e6,1e5,5e6,"3 banking 
+			            days",12:00 PM,T+0,0.15%p.a. based on the Net Asset Value (NAV) of the Fund before trust fee for the day,1.0% of the amount redeemed,Appropriate Philippine Dealing Exchange (PDEX) 30-day PDST (R2) rate
+CNBINTFI:PM,China Bank Intermediate Fixed Income Fund,China Bank,PHP,Intermediate Term Bond Funds,Moderate,2014-05-22,5e4,1e4,5e4,"30 calendar 
+			            days",12:00 PM,T + 1,0.50% per annum based on the Net Asset Value (NAV) of the Fund before trust fee for the day,1.0% of the amount redeemed,The appropriate Philippine Dealing Exchange (PDEX) average PDST (R2) rate corresponding to the actual average duration of the Fund\'s investments.
+CNBMMKF:PM,China Bank Money Market Fund,China Bank,PHP,Money Market Funds,Conservative,2009-03-20,5e4,1e4,5e4,"3 banking 
+			            days",12:00 PM,T + 1,0.25% per annum based on the Net Asset Value (NAV) of the Fund before trust fee for the day,1.0% of the amount redeemed,The appropriate Philippine Dealing Exchange (PDEX) average PDST (R2) rate corresponding to the actual average duration of the Funds investments
+CNBSTFD:PM,China Bank Short Term Fund,China Bank,PHP,Money Market Funds,Moderate,2014-05-22,5e4,1e4,5e4,"3 banking 
+			            days",12:00 PM,T + 1,0.25% per annum based on the Net Asset Value (ANV) of the Fund before trust fee for the day,1.0% of the amount redeemed,The appropriate Philippine Dealing Exchange (PDEX) average PDST(R2) rate corresponding to the actual average duration of the Fund\'s investments.
+EASDITB:PM,Eastwest Dollar Intermediate Term Bond Fund,EastWest,USD,Intermediate Term Bond Funds,Moderate,2005-03-18,2e3,200.0,2e3,"30 calendar 
+			            days",12:00 PM,T+3,0.50% p.a. of the market value of the fund,"$10.00 or 0.25% of the withdrawn amount, whichever is higher",25% Bloomberg USD Emerging Market Philippines Sovereign Bond Index + 75% Average Philippine USD Savings Deposit Rate.
+EASITBF:PM,Eastwest Peso Intermediate Term Bond Fund,EastWest,PHP,Intermediate Term Bond Funds,Moderate,2005-02-18,1e4,1e3,1e4,"30 calendar 
+			            days",12:00 PM,T+1,1% p.a. of the market value of the fund,"PHP 500.00 or 0.25% of the withdrawn amount, whichever is higher","Bloomberg Philippine Sovereign Bond Index 1-3 Year, Adjusted."
+EASLTBF:PM,Eastwest Peso Long Term Bond Fund,EastWest,PHP,Long Term Bond Funds,Moderate,2007-03-01,5e4,1e3,5e4,"180 calendar 
+			            days",12:00 PM,T+1,1.0% p.a. of the market value of the fund,"PHP 500.00 or 0.25% of the withdrawn amount, whichever is higher","Bloomberg Philippine Sovereign Bond Index AI, Adjusted."
+EASPMON:PM,Eastwest Peso Money Market Fund,EastWest,PHP,Money Market Funds,Conservative,2007-03-01,1e4,1e3,1e4,"0 calendar 
+			            days",12:00 PM,T+1,0.25% p.a. of the market value of the fund,None,3-month Philippine Dealing System Treasury Interpolated Rate PM (PDSI-R2)
+EASPSTF:PM,Eastwest Peso Short Term Fund,EastWest,PHP,Money Market Funds,Moderate,2016-06-21,1e4,1e3,1e4,"0 calendar 
+			            days",12:00 PM,T+1,0.25% p.a of the market value of the fund,Not applicable,"Bloomberg Philippine Sovereign Bond Index Money Market, Adjusted."
+EASPQRF:PM,Eastwest Philequity Feeder Fund,EastWest,PHP,Equity Funds,Aggressive,2014-10-29,1e4,1e3,1e4,"30 calendar 
+			            days",12:00 PM,T+4,0.25% per annum,PHP500 or 0.25% of the redemption proceeds whichever is higher,Philippine Stock Exchange Index
+EASPQIF:PM,Eastwest Philequity Institutional Feeder Fund,EastWest,PHP,Equity Funds,Aggressive,2014-09-22,0.0,0.0,0.0,"0 calendar 
+			            days",12:00 PM,T+3,Fee is charged at the portfolio level,0,Philippine Stock Exchange Index
+EASPQTK:PM,Eastwest PSEI Tracker Fund,EastWest,PHP,Equity Funds,Aggressive,2015-12-01,1e4,1e3,1e4,"30 calendar 
+			            days",12:00 PM,T+4,0.75% p.a of the market value of the fund,"P500.00 or 0.25% of redemption proceeds, whichever is higher",Philippine Stock Exchange Index
+MBASPBA:PM,Metro Aspire Balanced Feeder Fund,MetroBank,PHP,Balanced Funds,Aggressive,2015-08-27,5e3,1e3,5e3,"0 calendar 
+			            days",12:00 PM,T + 1,None,None,"60% Philippine Stock Exchange Index (PSEi) and 40% Bloomberg Philippine Sovereign Bond Index 1-5 year (BPHIL15), Adjusted"
+MBASPEQ:PM,Metro Aspire Equity Feeder Fund,MetroBank,PHP,Equity Funds,Aggressive,2015-08-27,5e3,1e3,5e3,"0 calendar 
+			            days",12:00 PM,T + 3,None,None,PSEi
+MBCAPGR:PM,Metro Balanced Fund,MetroBank,PHP,Balanced Funds,Aggressive,2005-04-08,25e3,25e3,25e3,"30 calendar 
+			            days",12:00 PM,T+1,2.0% p.a.,50% of income,"60% Philippine Stock Exchange Index (PSEi) and 40% Bloomberg Philippine Sovereign Bond Index 1-5 year (BPHIL15), Adjusted"
+MCBFUND:PM,Metro Corporate Bond Fund,MetroBank,PHP,Long Term Bond Funds,Moderate,2016-11-23,5e4,25e3,5e4,"30 calendar 
+			            days",12:00 PM,T+3,0.75% p.a.,50% of income,80% BPI Philippine Corporate Bond Index and 20% Philippine 30-day Special.
+MBEQITY:PM,Metro Equity Fund,MetroBank,PHP,Equity Funds,Aggressive,2007-03-01,25e3,25e3,25e3,"30 calendar 
+			            days",12:00 PM,T+3,2.0% p.a.,50% of income,Philippine Stock Exchange index (PSEi )
+MBHIDIV:PM,Metro High Dividend Yield Fund,MetroBank,PHP,Equity Funds,Aggressive,2014-10-10,25e3,25e3,25e3,"30 calendar 
+			            days",12:00 PM,T+3,2% p.a.,1.0% of redeemed amount,PSEi
+MBELITE:PM,Metro Max 3 Bond Fund,MetroBank,PHP,Intermediate Term Bond Funds,Moderate,2005-04-08,5e4,25e3,5e4,"30 calendar 
+			            days",12:00 PM,T+1,1.0% p.a.,50% of income,"80% Bloomberg Philippine Sovereign Bond Index 1-3 year (BPHIL13), Adjusted and 20% Philippine 30-day Special Savings Rate Gen. Average Rate (net of taxes)"
+MBPKEAR:PM,Metro Max 5 Bond Fund,MetroBank,PHP,Medium Term Bond Funds,Moderate,2005-04-06,5e4,25e3,5e4,"30 calendar 
+			            days",12:00 PM,T+1,1.5% p.a.,50% of income,"80% Bloomberg Philippine Sovereign Bond Index 1-5 year (BPHIL15), Adjusted and 20% Philippine 30-day Special Savings Rate Gen. Average Rate (net of taxes)"
+MBSTART:PM,Metro Money Market Fund,MetroBank,PHP,Money Market Funds,Conservative,2005-04-04,5e4,25e3,5e4,"7 calendar 
+			            days",12:00 PM,T+0,0.50% p.a.,50% of income,Philippine 30-day Special Savings Rate Gen. Average (net of taxes)
+MBPSEIT:PM,Metro PSEi Tracker Fund,MetroBank,PHP,Equity Funds,Aggressive,2014-10-10,25e3,25e3,25e3,"30 calendar 
+			            days",12:00 PM,T+3,1.0% p.a.,1.0% of amount redeemed,PSEi
+MSTFUND:PM,Metro Short Term Fund,MetroBank,PHP,Money Market Funds,Moderate,2017-03-15,25e3,1e4,25e3,"7 calendar 
+			            days",12:00 PM,End of Day,0.50% p.a.,50% of income earned,"75% Bloomberg Philippine 30-day Special Savings Rate General Average (net of taxes) and
+25% Bloomberg Philippine Sovereign Bond Index Money Market, Adjusted"
+MBIPLUS:PM,Metro Wealth Builder,MetroBank,PHP,Intermediate Term Bond Funds,Moderate,2005-04-26,5e3,1500.0,5e3,"90 calendar 
+			            days",12:00 PM,T+1,2.5% p.a.,50% of income,"80% Bloomberg Philippine Sovereign Bond Index 1-3 year (BPHIL13), Adjusted and 20% Philippine 30-day Special Savings Rate Gen. Average Rate (net of taxes)"
+MWEFDER:PM,Metro World Equity Feeder Fund,MetroBank,USD,Equity Funds,Aggressive,2016-09-21,2e3,1e3,2e3,"30 calendar 
+			            days",12:00 PM,4,1.0% p.a.,0.10% of redeemed amount,Morgan Stanley Capital International All Country World Daily Index (MSCI AC World Daily)
+MBPHLIQ:PM,Metro$ Max 3 Bond Fund,MetroBank,USD,Intermediate Term Bond Funds,Moderate,2005-04-05,2e3,1e3,2e3,"30 calendar 
+			            days",12:00 PM,T+1,1.5% p.a.,50% of income,35% JP Morgan Asian Credit Index Total Return (JACIPHTR) and 65% Philippine Dollar Deposit Rate Savings Deposit (PPSDUS$)
+MBPHLBD:PM,Metro$ Max 5 Bond Fund,MetroBank,USD,Medium Term Bond Funds,Moderate,2005-04-28,2e3,1e3,2e3,"30 calendar 
+			            days",12:00 PM,T+1,1.5% p.a.,50% of income,60% JP Morgan Asian Credit Index Total Return (JACIPHTR) and 40% Philippine Dollar Deposit Rate Savings Deposit (PPSDUS$)
+MBDMMKF:PM,Metro$ Money Market Fund,MetroBank,USD,Money Market Funds,Moderate,2007-03-01,2e3,1e3,2e3,"30 calendar 
+			            days",12:00 PM,T+1,1.0% p.a.,50% of income,3-Mo. US Treasury Bill yield (net of tax)
+PBCSIGT:PM,Pbcom Signature Fund,PBCOM,PHP,Money Market Funds,Conservative,2005-08-04,1e4,1e4,1e4,"30 calendar 
+			            days",11:00 AM,Next banking day,0.5% p.a.,0.125% of redemption value,91-day T-Bills
+PNBDRMB:PM,PNB Dream Builder Money Market,PNB,PHP,Money Market Funds,Conservative,2008-12-03,2e3,2e3,2e3,"30 calendar 
+			            days",11:00 AM,T+1,0.5% p.a. of fund value,50% of Income Earned,"Moving average of the Philippines\' 30 Day Special Savings Rate General Average, net of taxes"
+PNBPHSX:PM,PNB Enhanced Phil Index Reference Fund,PNB,PHP,Equity Funds,Aggressive,2010-09-08,1e4,1e4,1e4,"30 calendar 
+			            days",11:00 AM,T+3,2.00% p.a.,50% of Income Earned,100% Philippine Stock Exchange Index
+ALDUPEQ:PM,PNB Equity Fund,PNB,PHP,Equity Funds,Aggressive,2007-02-26,1e4,1e4,1e4,"30 calendar 
+			            days",11:00 AM,T+3 Days,2.00% p.a of NAV,".5% of income earned, if any",PSE INDEX
+PNBDLPL:PM,PNB Global Filipino Dollar Money Market Fund,PNB,USD,Money Market Funds,Conservative,2005-12-23,100.0,100.0,100.0,"30 calendar 
+			            days",11:00 AM,T+1,0.50% p.a.,50% of Income Earned,"Moving Average of the Average One Month TD Rate Quoted by 3 Banks, net of taxes"
+PNBPSPL:PM,PNB Global Filipino Peso Money Market Fund,PNB,PHP,Money Market Funds,Conservative,2006-01-11,5e3,5e3,5e3,"5 banking 
+			            days",11:00 AM,T+1,0.50% p.a.,50% of Income Earned,"Moving Average of the Philippines 30 Day Special Savings Rate General Average, net of taxes"
+PNBHIDF:PM,PNB High Dividend Fund,PNB,PHP,Equity Funds,Aggressive,2012-06-15,1e4,1e4,1e4,"30 calendar 
+			            days",11:00 AM,T+3,2.00% p.a.,50% of Income Earned,100% Philippine Stock Exchange Index
+ALDUPGS:PM,PNB Peso Intermediate Term Bond Fund,PNB,PHP,Intermediate Term Bond Funds,Moderate,2006-02-16,1e4,1e4,1e4,"30 calendar 
+			            days",11:00 AM,T+1 Day,0.75% p.a.,".50% of income earned, if any",1-3 Year Total Return Index to Bloomberg Philippine Sovereign Bond Index 1 to 3 Year (Adjusted)
+PNBMHPT:PM,PNB Prestige Balanced Fund,PNB,PHP,Balanced Funds,Aggressive,2010-09-08,1e4,1e4,1e4,"30 calendar 
+			            days",11:00 AM,T+3,1.25% p.a.,50% of Income Earned,"50% Philippine Stock Exchange Index (PSEi) and 50% Bloomberg Philippine Sovereign Bond Index Money Market, Adjusted."
+PNBDPRF:PM,PNB Prime Dollar Money Market Fund,PNB,USD,Money Market Funds,Conservative,2011-03-07,500.0,500.0,500.0,"30 calendar 
+			            days",11:00 AM,T+1,0.5% p.a.,50% of Income Earned,"Moving Average of the Average One Month TD Rate Quoted by 3 Banks, net of taxes"
+PNBMHPR:PM,PNB Prime Peso Money Market Fund,PNB,PHP,Money Market Funds,Conservative,2010-09-27,1e4,1e4,1e4,"5 banking 
+			            days",11:00 AM,T+1,0.50% p.a.,50% of Income Earned,"Moving Average of the Philippines 30 Day Special Savings Rate General Average, net of taxes"
+PNBDLPR:PM,PNB Profit Dollar Intermediate Term Bond Fund,PNB,USD,Intermediate Term Bond Funds,Moderate,2005-10-03,1e3,1e3,1e3,"30 calendar 
+			            days",11:00 AM,T+1,1.00% p.a.,50% of Income Earned,Moving Average of the yield of a three year ROP instrument
+RCBBALF:PM,Rizal Balanced Fund,RCBC,PHP,Balanced Funds,Moderate,2009-06-19,25e3,5e3,25e3,"30 calendar 
+			            days",11:30 AM,T+3,1% based on NAV,0.25% of redemption proceeds,Composite: PSEi (60%) + HSLI - Overall Index (40%)
+RCBEAGL:PM,Rizal Dollar Bond Fund,RCBC,USD,Long Term Bond Funds,Moderate,2005-03-28,1e3,1e3,1e3,"30 calendar 
+			            days",11:30 AM,T+3,1% based on NAV,0.125% of redemption proceeds,Composite: 50% HSLI Asian Dollar Bond Index (ADBI) + 50% 1-Year LIBOR
+RCBPHNX:PM,Rizal Dollar Money Market Fund,RCBC,USD,Money Market Funds,Moderate,2005-03-28,1e3,500.0,1e3,"30 calendar 
+			            days",11:30 AM,T+1,0.50% based on NAV,0.125% of redemption proceeds,Ave. 3 - month LIBOR rate
+RCBTIGR:PM,Rizal Equity Fund,RCBC,PHP,Equity Funds,Aggressive,2005-03-28,25e3,5e3,25e3,"30 calendar 
+			            days",11:30 AM,T+3,1% based on NAV,0.25% of redemption proceeds,Composite: PSEi (100%)
+RCBGEQF:PM,Rizal Global Equity Feeder Fund,RCBC,USD,Equity Funds,Aggressive,2014-12-10,1e3,1e3,1e3,"30 calendar 
+			            days",11:30 AM,T+7,0.75% p.a,0.25% of redemption proceeds,MSCI World (Net) Index + Ave. 6-month LIBOR rate
+RCBUNCN:PM,Rizal Peso Bond Fund,RCBC,PHP,Long Term Bond Funds,Moderate,2005-03-28,5e4,1e4,5e4,"30 calendar 
+			            days",11:30 AM,T+1,0.50% based on NAV,0.125% of redemption proceeds,HSBC Local Bond Index (HSLI) - Overall Index
+RCBPHCM:PM,Rizal Peso Cash Management Fund,RCBC,PHP,Money Market Funds,Conservative,2014-11-24,5e6,1e6,5e6,"14 calendar 
+			            days",11:30 AM,T+1,0.25% based on NAV,0.125% of redemption proceeds,"Philippines 30-Day Special Savings Rate, net of 20% final withholding tax"
+RCBDRGF:PM,Rizal Peso Money Market Fund,RCBC,PHP,Money Market Funds,Conservative,2005-03-28,25e3,5e3,25e3,"30 calendar 
+			            days",11:30 AM,T+1,0.50% based on NAV,0.125% of redemption proceeds,"Philippines 30-day Special Savings Rate General Average, net of tax."
+SBDLUIT:PM,SB Dollar Bond Fund,Security Bank,USD,Long Term Bond Funds,Moderate,2005-07-01,1e3,100.0,1e3,"0 calendar 
+			            days",01:30 PM,T + 4,0.75% p.a.,N/A,90% JP Morgan Asia Credit Total Return Index Philippines + 10% O/N USD Time Deposit
+SBITPBD:PM,SB Intermediate Term Peso Bond Fund,Security Bank,PHP,Intermediate Term Bond Funds,Moderate,2014-04-10,1e4,5e3,1e4,"0 calendar 
+			            days",01:30 PM,T + 2,0.70% p.a.,N/A,"90% HSBC Local Currency Bond 1-3Yr Return (Phils) Index (HP13TR), 10% O/N SSA"
+SBPSUIT:PM,SB Peso Bond Fund,Security Bank,PHP,Long Term Bond Funds,Moderate,2005-07-01,1e4,5e3,1e4,"0 calendar 
+			            days",01:30 PM,T+2,1.00% p.a.,N/A,90% HSBC Local Currency Government Bond Total Return Index1 + 10% O/N Special Savings Account Rate (net of withholding tax)
+SBPSOEA:PM,SB Peso Money Market Fund,Security Bank,PHP,Money Market Funds,Conservative,2006-10-09,1e4,5e3,1e4,"0 calendar 
+			            days",01:30 PM,T+1,0.20% p.a.,N/A,90% HSBC Money Market Total Return Index + 10% O/N Special Savings Account (net of withholding tax)
+SBPEIDX:PM,SB Philippine Equity Index Fund,Security Bank,PHP,Equity Funds,Aggressive,2015-11-23,1e4,5e3,1e4,"0 calendar 
+			            days",01:30 PM,T+4,1.00% p.a.,N/A,Philippine Stock Exchange Index
+SBPSHDF:PM,Security Bank High Dividend Peso Equity Fund,Security Bank,PHP,Equity Funds,Aggressive,2014-03-10,1e4,5e3,1e4,"0 calendar 
+			            days",01:30 PM,T + 4,1.50% p.a.,N/A,90% Philippine Stock Exchange Index (price only return) + 10% O/N Special Savings Account (net of withholding tax)
+SBPSASV:PM,Security Bank SB Peso Asset Variety Fund,Security Bank,PHP,Balanced Funds,Aggressive,2006-10-09,1e4,5e3,1e4,"0 calendar 
+			            days",01:30 PM,T + 4,1.5% p.a.,N/A,50% Philippine Stock Exchange Index + 40% HSBC Local Currency Government Bond Total Return Index1 + 10% O/N Special Savings Account (net of withholding tax)
+UCPBBAL:PM,UCPB Balanced Fund,UCPB,PHP,Balanced Funds,Aggressive,2007-03-05,1e4,5e3,1e4,"30 calendar 
+			            days",01:30 PM,T+3,1.75%,5%,Blended Benchmark ï¿½ 50% Phil. Stock Exchange Index & 50% Bloomberg Philippine Local Sovereign Index
+UCPBCSH:PM,UCPB Cash Management Fund,UCPB,PHP,Money Market Funds,Conservative,2006-11-17,1e4,5e3,1e4,"30 calendar 
+			            days",01:30 PM,T+1,0.25%,5%,None
+UCPBEQT:PM,UCPB Equity Fund,UCPB,PHP,Equity Funds,Aggressive,2007-01-15,1e4,5e3,1e4,"30 calendar 
+			            days",01:30 PM,T+3,1.75%,5%,Phil. Stock Exchange Index
+UCPBHDF:PM,UCPB High Dividend Fund,UCPB,PHP,Equity Funds,Aggressive,2014-04-08,1e4,5e3,1e4,"30 calendar 
+			            days",01:30 PM,T+3,1.5%,5%,Phil Stock Exchange
+UCPBCSV:PM,UCPB Peso Bond Fund,UCPB,PHP,Long Term Bond Funds,Moderate,2005-05-27,1e4,5e3,1e4,"30 calendar 
+			            days",01:30 PM,T+1,1.00%,5%,Bloomberg Philippine Local Sovereign Index
+UCPBPIE:PM,UCPB Philippine Index Equity Fund,UCPB,PHP,Equity Funds,Aggressive,2015-09-30,1e4,5e3,1e4,"30 calendar 
+			            days",01:30 PM,T+3,0.75%,5%,Philippine Stock Exchange Index
+UCPBBFA:PM,UCPB US$ Bond Fund,UCPB,USD,Medium Term Bond Funds,Moderate,2015-12-08,1e3,500.0,1e3,"60 calendar 
+			            days",01:30 PM,T + 3,.75%,5%,J. P. Morgan
+UCPBDMM:PM,UCPB US$ Money Market Fund,UCPB,USD,Money Market Funds,Conservative,2005-09-15,1e3,500.0,1e3,"30 calendar 
+			            days",01:30 PM,T+3,0.25%,5%,3 Mo. USD London Interbank Offer Rates
+UBPDIVP:PM,Union Bank Dividend Play Equity Fund,Union Bank,PHP,Equity Funds,Aggressive,2014-03-07,1e5,0.0,0.0,"30 calendar 
+			            days",02:30 PM,T +3,2% per annum,0.25% or Php 500 whichever is higher,Philippine Stock Index (PSEi)
+IFPHDLB:PM,Union Bank Dollar Bond Fund,Union Bank,USD,Medium Term Bond Funds,Moderate,2004-01-12,2e3,0.0,0.0,"90 calendar 
+			            days",02:30 PM,T+1,0.75% per annum; 0.24% for the quarter,0.25% or Usd 10 whichever is higher,HongKong Shanghai Banking Corporation USD Bond Index
+IFFITEP:PM,Union Bank Fund Fixed Income Tax Exempt Fund,Union Bank,PHP,Long Term Bond Funds,Moderate,2007-10-01,1e5,0.0,0.0,"90 calendar 
+			            days",02:30 PM,T+1,0.25% per annum;  0.064% for the quarter,None,HongKong Shanghai Banking Corporation 1-5Year Bond Index
+UBPHNWI:PM,Union Bank High Net Worth Intermediate Term Peso Fixed Income Fund,Union Bank,PHP,Intermediate Term Bond Funds,Moderate,2016-07-01,1e7,0.0,0.0,"0 calendar 
+			            days",02:30 PM,T+1,0.125% per annum based on the total market value of the Fund,0,"Bloomberg Philippine Sovereign Bond Index 1-3 Years, Adjusted"
+UBPHNWM:PM,Union Bank High Net Worth Medium Term Peso Fixed Income Fund,Union Bank,PHP,Medium Term Bond Funds,Moderate,2016-07-01,1e7,0.0,0.0,"0 calendar 
+			            days",02:30 PM,T+1,0.125% per annum based on the total market value of the Fund,0,"Bloomberg Philippine Sovereign Bond Index 1-5 Years, Adjusted"
+IFDPRIM:PM,Union Bank Infinity Prime Fund,Union Bank,PHP,Intermediate Term Bond Funds,Conservative,2006-09-29,1e5,0.0,0.0,"90 calendar 
+			            days",02:30 PM,T+1,2% per annum; 0.51% for the quarter,5% flat on redeemed amount,HongKong Shanghai Banking Corporation 1-3Year Bond Index
+IFDLTCI:PM,Union Bank Long Term Fixed Income Fund,Union Bank,PHP,Long Term Bond Funds,Moderate,2005-06-01,1e5,0.0,0.0,"90 calendar 
+			            days",02:30 PM,T+1,1% per annum; 0.33% for the quarter,2% or Php 500 whichever is higher,HongKong Shanghai Banking Corporation 1-5Year Bond Index
+UNPESBA:PM,Union Bank Peso Balanced Fund,Union Bank,PHP,Balanced Funds,Moderate,2011-02-15,1e5,0.0,0.0,"90 calendar 
+			            days",02:30 PM,T+1,"2% per annum on equity holdings, 1% per annum on fixed income holdings, 0.25% per annum of pooled funds; 0.53% for the quarter",0.25% or Php 500 whichever is higher,50% - Philippine Stock Index (PSEi) and 50% -  HongKong Shanghai Banking Corporation 1-5Year Bond Index
+IFDPMMP:PM,Union Bank Peso Short Term Fixed Income Fund,Union Bank,PHP,Money Market Funds,Conservative,2006-02-08,0.0,0.0,0.0,"90 calendar 
+			            days",02:30 PM,T+1,1% per annum; 0.34% for the quarter,Not applicable; Service Fee of Php100 per withdrawal,HongKong Shanghai Banking Corporation Money Market Total Return Index
+UBPHEIT:PM,Union Bank Philippine Equity Index Tracker,Union Bank,PHP,Equity Funds,Aggressive,2014-05-22,5e4,0.0,0.0,"30 calendar 
+			            days",02:30 PM,T + 3 Days,The Trustee shall collect from the Fund trust fees in the amount of ONE PERCENT (1.00%) per annum based on the total market value of the Fund before trust fees.,An early redemption fee amounting to 0.25% of the redeemed amount or Php 500.00 whichever is higher shall be charged to the concerned Participant in case of redemption prior to the completion or lapse of the minimum holding period.,"The Fund aims to provide returns that mimic or track the
+performance of the Philippine Stock exchange Index (PSEi)."
+IFDPPBP:PM,Union Bank Philippine Peso Fixed Income Fund,Union Bank,PHP,Medium Term Bond Funds,Moderate,2004-01-12,1e5,0.0,0.0,"90 calendar 
+			            days",02:30 PM,T+1,1% per annum; 0.33% for the quarter,0.25% or Php 500 whichever is higher,HongKong Shanghai Banking Corporation 1-5Year Bond Index
+IFDLCPE:PM,Union Bank Union Bank Large Cap Philippine Equity Fund,Union Bank,PHP,Equity Funds,Aggressive,2005-03-01,1e5,0.0,0.0,"90 calendar 
+			            days",02:30 PM,T + 4,2% per annum; 0.63% for the quarter,0.25% or Php 500 whichever is higher,Philippine Stock Index (PSEi)
