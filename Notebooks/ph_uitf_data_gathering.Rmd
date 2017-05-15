@@ -1,6 +1,6 @@
 ---
 title: 'Scraping Web Data on UITFs using R'
-author: Rey Anthony Masilang
+author: 'Rey Anthony Masilang'
 date: '2017-05-07'
 output:
   html_document:
